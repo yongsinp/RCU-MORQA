@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "__PROJECT_NAME__"
+version = "0.1.0"
+description = "__FILL_IN__"
+readme = "README.md"
+authors = [
+    { name = "Yongsin Park", email = "yongsin.nlp@gmail.com" },
+]
+maintainers = [
+    { name = "__FILL_IN__", email = "__FILL_IN__" },
+]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.10"
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = ["__FILL_IN__"]
+test = ["__FILL_IN__"]
+docs = ["__FILL_IN__"]
+
+[project.urls]
+Homepage = "https://github.com/yongsinp/__PROJECT_NAME__"
+Issues = "https://github.com/yongsinp/__PROJECT_NAME__/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
