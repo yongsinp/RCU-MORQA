@@ -3,6 +3,9 @@
 !/data/.gitkeep
 /models/*
 !/models/.gitkeep
+/cache/*
+__pycache__/
+*.pyc
 
 ### IntelliJ
 # IntelliJ project files
