@@ -4,6 +4,14 @@ from abc import ABC, abstractmethod
 
 from src.preprocess.data import Document, Annotation, Attribute, Label, IMPLICIT_QUESTTYP
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
 
 class Extractor(ABC):
     """Abstract base class for question extractors."""
