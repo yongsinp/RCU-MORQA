@@ -21,19 +21,23 @@ class Extractor(ABC):
         self.logger = logging.getLogger(self.model_name)
 
     @staticmethod
-    def _get_new_document(document: Document) -> Document:
+    def _get_new_document(document: Document, clear_annotations: bool = True, clear_responses: bool = True) -> Document:
         """Creates a new Document with empty annotations and responses.
 
         Args:
             document: The original Document.
+            clear_annotations: Whether to clear existing annotations (questions). This only removes `Annotation` objects and leaves the structure intact.
+            clear_responses: Whether to clear existing responses.
         Returns:
-            A new Document with empty annotations and responses.
+            A new Document with cleared annotations and responses.
         """
         new_document = copy.deepcopy(document)
 
         # Clear existing annotations and responses
-        new_document.annotations = {k: [] for k in new_document.annotations}
-        new_document.responses = []
+        if clear_annotations:
+            new_document.annotations = {key: [] for key in new_document.annotations}
+        if clear_responses:
+            new_document.responses.clear()
 
         return new_document
 
