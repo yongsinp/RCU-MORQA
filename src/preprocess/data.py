@@ -328,5 +328,13 @@ class Document(MorqaData):
         )
 
 
+def prune(data: list) -> list:
+    """Recursively remove keys with None or empty values from a dictionary."""
+    return {k: v for k, v in data
+            if not k.startswith('_')
+            and k != 'language'
+            and v not in (None, False, '')}
+
+
 # List of valid QuestionTypes for implicit questions, sorted for id assignment
 IMPLICIT_QUESTTYP: list[QuestionType] = sorted(Attribute.IMPLICIT_QUESTTYP)
