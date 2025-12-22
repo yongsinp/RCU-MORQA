@@ -129,11 +129,11 @@ class LlmExtractor(Extractor):
     def _extract_questions(self, document: Document) -> Document:
         """Extracts questions from the given document using the LLM.
 
-         Args:
-             document: The Document to extract questions from.
-         Returns:
-             A new Document with extracted question Annotations.
-         """
+        Args:
+            document: The Document to extract questions from.
+        Returns:
+            A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations and responses.
+        """
         # Create a new document to return
         new_document = self._get_new_document(document)
 
