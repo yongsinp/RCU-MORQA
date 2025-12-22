@@ -217,6 +217,7 @@ class Document(MorqaData):
     query_content: str
     query_title: str
     responses: list[Response]
+    language: str = "en"
     _questions: list[Annotation] = None
     _answers: list[Annotation] = None
     _qa_pairs: dict[str, QaPair] = None
@@ -285,15 +286,20 @@ class Document(MorqaData):
 
     @classmethod
     def from_dict(cls, data: dict) -> "Document":
+        language = "en"
+        for k in data:
+            if k.startswith('query_'):
+                language = k.rsplit('_', 1)[-1]
+                break
+
         return cls(
             annotations={"query_title" if "title" in k else "query_content": [Annotation.from_dict(item) for item in v]
                          for k, v in data['annotations'].items()},
             post_id=str(data.get('post_id', "")),
-            # Use next((str(data[k]) for k in ("query_content_en", "query_content_zh") if k in data and data[k]), "")
-            query_content=str(data.get('query_content_en', "")),
-            # Use next((str(data[k]) for k in ("query_title_en", "query_title_zh") if k in data and data[k]), "")
-            query_title=str(data.get('query_title_en', "")),
+            query_content=str(data.get(f'query_content_{language}', "")),
+            query_title=str(data.get(f'query_title_{language}', "")),
             responses=[Response.from_dict(resp) for resp in data['responses']],
+            language=language,
         )
 
 
