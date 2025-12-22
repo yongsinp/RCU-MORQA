@@ -4,7 +4,7 @@ from abc import abstractmethod
 from ast import literal_eval
 
 from src.extraction.extractor import Extractor
-from src.preprocess.data import Document
+from src.preprocess.data import Document, QuestionType
 
 SYSTEM_PROMPT_QUESTION = """You are an advanced Medical Scribe.
 
@@ -172,9 +172,16 @@ class LlmExtractor(Extractor):
 
         return new_document
 
-    def classify_questions(self, question_text: str) -> dict:
+    def _classify_question(self, question: str) -> dict:
+        """Classifies a question's polarity and type using the LLM.
+
+        Args:
+            question: The text of the question to classify.
+        Returns:
+            A dictionary with 'polarity' and 'type' if classification is successful, otherwise an empty dict.
+        """
         try:
-            response = self._call_api(question_text, SYSTEM_PROMPT_CLASSIFICATION)
+            response = self._call_api(question, SYSTEM_PROMPT_CLASSIFICATION)
         except Exception as e:
             self.logger.error("API error: {}".format(e))
             return {}
@@ -188,3 +195,28 @@ class LlmExtractor(Extractor):
         except Exception as e:
             self.logger.error("JSON parsing error: {}\n{}".format(e, response))
             return {}
+
+    def classify_questions(self, document: Document) -> Document:
+        """Classifies the questions in the given document using the LLM.
+
+        Args:
+            document: The Document containing questions to classify.
+        Returns:
+            A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations.
+        """
+        new_doument = self._get_new_document(document, clear_annotations=False)
+
+        for question in document.questions:
+            # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
+            if question.att.is_implicit:
+                continue
+
+            # We don't have enough instances of NOT_CC questions
+            if question.att.questtyp == QuestionType.NOT_CC:
+                continue
+
+            pred = self._classify_question(question.att.text)
+            question.att.polarity = pred.get('polarity')
+            question.att.questtyp = pred.get('type')
+
+        return new_doument
