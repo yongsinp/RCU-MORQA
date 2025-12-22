@@ -54,6 +54,14 @@ class MorqaData(ABC):
     def __str__(self) -> str:
         ...
 
+    @staticmethod
+    def _get_language(data: dict) -> str:
+        """Determine the language of the data based on keys"""
+        for k in data:
+            if 'content_' in k:
+                return k.rsplit('_', 1)[-1]
+        raise ValueError("Could not determine language from data")
+
     @classmethod
     @abstractmethod
     def from_dict(cls, data: dict) -> "MorqaData":
@@ -172,12 +180,12 @@ class Response(MorqaData):
 
     @classmethod
     def from_dict(cls, data: dict) -> "Response":
+        language = cls._get_language(data)
         return cls(
             annotations={"query_title" if "title" in k else "query_content": [Annotation.from_dict(ann) for ann in v]
                          for k, v in data["annotations"].items()},
             author_id=str(data.get('author_id', "")),
-            # Use next((str(data[k]) for k in ("content_en", "content_zh") if k in data and data[k]), "")
-            content=str(data.get('content_en', "")),
+            content=str(data.get(f'content_{language}', "")),
             response_num=str(data.get('response_num', "")),
         )
 
@@ -286,12 +294,7 @@ class Document(MorqaData):
 
     @classmethod
     def from_dict(cls, data: dict) -> "Document":
-        language = "en"
-        for k in data:
-            if k.startswith('query_'):
-                language = k.rsplit('_', 1)[-1]
-                break
-
+        language = cls._get_language(data)
         return cls(
             annotations={"query_title" if "title" in k else "query_content": [Annotation.from_dict(item) for item in v]
                          for k, v in data['annotations'].items()},
