@@ -12,17 +12,7 @@ from src.extraction.llm import LlmExtractor
 from src.preprocess.data import Document, QuestionType
 from src.util.io import read_json, write_json
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
-
 logging.getLogger('openai._base_client').setLevel(logging.WARNING)
-logging.getLogger('httpcore').setLevel(logging.WARNING)
-logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
 class DeepSeekExtractor(LlmExtractor):

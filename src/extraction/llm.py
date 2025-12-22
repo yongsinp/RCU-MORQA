@@ -1,3 +1,4 @@
+import logging
 import re
 from abc import abstractmethod
 from ast import literal_eval
@@ -65,6 +66,9 @@ Output: {"polarity": "binary", "type": "outcome_prediction"}
 Input: is the condition severe?
 Output: {"polarity": "binary", "type": "assessment"}
 """
+
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
 class LlmExtractor(Extractor):
