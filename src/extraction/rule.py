@@ -138,7 +138,7 @@ class RuleBasedExtractor(Extractor):
         end = question_span.end_char
         return super()._create_annotation(text, start, end)
 
-    def extract_questions(self, document: Document) -> Document:
+    def _extract_questions(self, document: Document) -> Document:
         """Extracts questions from the given document using rule-based methods.
 
         Args:
@@ -155,20 +155,7 @@ class RuleBasedExtractor(Extractor):
                 doc = self.model(text)
                 # Look for "?" first and then "please" if none found
                 extractions = self._extract_by_punctuation(doc) or self._extract_by_please(doc)
-                new_document.annotations[key].extend(sorted(extractions, key=lambda x: (x.start, x.end)))
-
-        # Add implicit questions if no questions are extracted
-        if not any(new_document.annotations.values()):
-            self._add_implicit_questions(new_document)
-
-        # Assign IDs to extracted questions
-        self._assign_ids(new_document)
-
-        self.logger.debug(f"""
-Document ID: {document.post_id}
-    Gold Questions:\n\t\t{"\n\t\t".join(q.att.text for q in document.questions)}
-    Extracted Questions:\n\t\t{"\n\t\t".join(q.att.text for q in new_document.questions)}
-                """)
+                new_document.annotations[key].extend(extractions)
 
         return new_document
 
