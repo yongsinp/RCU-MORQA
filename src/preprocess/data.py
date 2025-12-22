@@ -13,6 +13,8 @@ from src.util.io import read_json
 
 
 class MorqaAttr(str, Enum):
+    """Base class for MORQA annotation attributes."""
+
     def __str__(self) -> str:
         return self.value
 
@@ -44,6 +46,8 @@ class Value(MorqaAttr):
 
 
 class MorqaData(ABC):
+    """Base class for MORQA data structures."""
+
     def __eq__(self, other):
         if not isinstance(other, Attribute):
             return False
@@ -70,6 +74,8 @@ class MorqaData(ABC):
 
 @dataclass
 class Attribute(MorqaData):
+    """The "att" field in an annotation."""
+    # Set of valid QuestionTypes for implicit questions
     IMPLICIT_QUESTTYP: ClassVar[set[QuestionType]] = {QuestionType.ADVICE, QuestionType.ASSESSMENT,
                                                       QuestionType.IDENTIFICATION}
     text: str
@@ -93,7 +99,7 @@ class Attribute(MorqaData):
             raise ValueError(f"Invalid questtyp ({self.questtyp}) for implicit question")
 
     def __str__(self) -> str:
-        # Using __dataclass_fields__ instead of dataclasses.fields() will print ClassVar fields too
+        # Using __dataclass_fields__ instead of dataclasses.fields() will also print ClassVar fields
         lines = [f"{attr.name}: {val}" for attr in dataclasses.fields(Attribute) if (val := getattr(self, attr.name))]
         return "\n".join(lines)
 
@@ -117,6 +123,7 @@ class Attribute(MorqaData):
 
 @dataclass
 class Annotation(MorqaData):
+    """The "annotations" field in a document or a response."""
     att: Attribute
     doc: str
     end: int
@@ -158,6 +165,7 @@ class Annotation(MorqaData):
 
 @dataclass
 class Response(MorqaData):
+    """The "responses" field in a document."""
     annotations: dict[str, list[Annotation]]
     author_id: str
     content: str
@@ -192,6 +200,7 @@ class Response(MorqaData):
 
 @dataclass
 class QaPair(MorqaData):
+    """A Question-Answer pair consisting of one or more questions and their corresponding answers under the same ID."""
     id: str
     questions: list[Annotation]
     answers: list[Annotation]
@@ -220,6 +229,7 @@ class QaPair(MorqaData):
 
 @dataclass
 class Document(MorqaData):
+    """The top-level document structure containing annotations and responses."""
     annotations: dict[str, list[Annotation]]
     post_id: str
     query_content: str
@@ -306,4 +316,5 @@ class Document(MorqaData):
         )
 
 
+# List of valid QuestionTypes for implicit questions, sorted for id assignment
 IMPLICIT_QUESTTYP: list[QuestionType] = sorted(Attribute.IMPLICIT_QUESTTYP)
