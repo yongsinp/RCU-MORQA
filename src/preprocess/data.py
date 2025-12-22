@@ -1,7 +1,7 @@
 import dataclasses
 import os
 from abc import abstractmethod, ABC
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pprint import pprint
@@ -217,46 +217,52 @@ class Document(MorqaData):
     query_content: str
     query_title: str
     responses: list[Response]
-    _questions = None
-    _answers = None
-    _qa_pairs = None
+    _questions: list[Annotation] = None
+    _answers: list[Annotation] = None
+    _qa_pairs: dict[str, QaPair] = None
 
     @property
-    def questions(self) -> dict[str, list[Annotation]]:
+    def questions(self) -> list[Annotation]:
+        """List of all question annotations found in the document."""
         if not self._questions:
-            self._questions = defaultdict(list)
-
-            for annotation in self.annotations.values():
-                for question in annotation:
-                    self._questions[question.att.id].append(question)
+            self._questions = [ann for anns in self.annotations.values() for ann in anns]
 
         return self._questions
 
     @property
-    def answers(self) -> dict[str, list[Annotation]]:
+    def answers(self) -> list[Annotation]:
+        """List of all answer annotations found in the document."""
         if not self._answers:
-            self._answers = defaultdict(list)
+            self._answers = []
 
             for response in self.responses:
-                for annotation in response.annotations.values():
-                    for answer in annotation:
-                        if answer.label == Label.SHORTEST_ANSWER:
-                            self._answers[answer.att.id].append(answer)
+                for anns in response.annotations.values():
+                    for ann in anns:
+                        if ann.label == Label.SHORTEST_ANSWER:
+                            self._answers.append(ann)
 
         return self._answers
 
     @property
-    def qa_pairs(self) -> list[QaPair]:
+    def qa_pairs(self) -> dict[str, QaPair]:
+        """Mapping of question IDs to QA pairs found in the document."""
         if not self._qa_pairs:
-            self._qa_pairs = [QaPair(id_, questions, self.answers.get(id_, []))
-                              for id_, questions in self.questions.items()]
+            id_question_map = defaultdict(list)
+            id_answer_map = defaultdict(list)
+
+            # Populate maps
+            for q in self.questions:
+                id_question_map[q.att.id].append(q)
+            for a in self.answers:
+                id_answer_map[a.att.id].append(a)
+
+            # Create QA pairs
+            self._qa_pairs = {
+                id_: QaPair(id_, questions, id_answer_map.get(id_, []))
+                for id_, questions in id_question_map.items()
+            }
 
         return self._qa_pairs
-
-    @property
-    def qids(self) -> list[str]:
-        """List of question IDs."""
-        return self.questions.keys()
 
     def __str__(self) -> str:
         lines = [
