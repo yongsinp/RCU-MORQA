@@ -242,23 +242,35 @@ class Document(MorqaData):
 
     @property
     def questions(self) -> list[Annotation]:
-        """List of all question annotations found in the document."""
+        """List of all question annotations found in the document.
+
+        Questions are ordered such that:
+            1. Questions extracted from 'query_title' appear before those from 'query_content'.
+            2. Within each section, questions are sorted by their starting position in the text, and then by their ending position.
+        """
         if not self._questions:
-            self._questions = [ann for anns in self.annotations.values() for ann in anns]
+            self._questions = []
+
+            for key in ('query_title', 'query_content'):
+                for ann in sorted(self.annotations.get(key, []), key=lambda x: (x.start, x.end)):
+                    self._questions.append(ann)
 
         return self._questions
 
     @property
     def answers(self) -> list[Annotation]:
-        """List of all answer annotations found in the document."""
+        """List of all answer annotations found in the document.
+
+        Answers are sorted by their associated question ID, and then by their starting and ending positions.
+        """
         if not self._answers:
             self._answers = []
 
             for response in self.responses:
                 for anns in response.annotations.values():
-                    for ann in anns:
-                        if ann.label == Label.SHORTEST_ANSWER:
-                            self._answers.append(ann)
+                    answers = filter(lambda x: x.label == Label.SHORTEST_ANSWER, anns)
+                    sorted_answers = sorted(answers, key=lambda x: (x.att.id, x.start, x.end))
+                    self._answers.extend(sorted_answers)
 
         return self._answers
 
