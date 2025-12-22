@@ -85,6 +85,30 @@ class Extractor(ABC):
             question.att.id = str(i)
 
     @abstractmethod
-    def extract_questions(self, document: Document) -> list[Annotation]:
-        """Extracts questions from a `Document` object."""
+    def _extract_questions(self, document: Document) -> Document:
         ...
+
+    def extract_questions(self, document: Document) -> Document:
+        """Extracts questions from the given document.
+
+        Args:
+            document: The Document to extract questions from.
+        Returns:
+            A new Document with extracted question Annotations.
+        """
+        new_document = self._extract_questions(document)
+
+        # Add implicit questions if no questions are extracted
+        if not any(new_document.annotations.values()):
+            self._add_implicit_questions(new_document)
+
+        # Assign IDs to extracted questions
+        self._assign_ids(new_document)
+
+        self.logger.debug(f"""
+Document ID: {document.post_id}
+    Gold Questions:\n\t\t{"\n\t\t".join(q.att.text for q in document.questions)}
+    Extracted Questions:\n\t\t{"\n\t\t".join(q.att.text for q in new_document.questions)}
+""")
+
+        return new_document
