@@ -18,24 +18,22 @@ def is_overlapping(ann1: Annotation, ann2: Annotation, exact_match: bool = False
         True if annotations overlap (or match exactly if exact_match is True),
         False otherwise.
     """
+    # We should not compare implicit questions with non-implicit ones
     if bool(ann1.att.is_implicit) != bool(ann2.att.is_implicit):
         return False
 
     if exact_match:
-        if ann1.start == ann2.start and ann1.end == ann2.end:
-            if match_attr:
-                return ann1.att == ann2.att
-            return True
+        # Check for exact span/attribute match
+        if (ann1.start, ann1.end) == (ann2.start, ann2.end):
+            return ann1.att == ann2.att if match_attr else True
         return False
 
     # Check for span overlap
     if ann1.end <= ann2.start or ann2.end <= ann1.start:
-        return False  # No overlap
+        return False
 
-    if match_attr:
-        return ann1.att == ann2.att
-
-    return True
+    # Check for attribute match
+    return ann1.att == ann2.att if match_attr else True
 
 
 if __name__ == '__main__':
