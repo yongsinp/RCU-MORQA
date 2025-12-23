@@ -206,7 +206,7 @@ class LlmExtractor(Extractor):
         """
         new_doument = self._get_new_document(document, clear_annotations=False)
 
-        for question in document.questions:
+        for question in new_doument.questions:
             # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
             if question.att.is_implicit:
                 continue
