@@ -61,6 +61,9 @@ class MorqaData(ABC):
     @staticmethod
     def _get_language(data: dict) -> str:
         """Determine the language of the data based on keys"""
+        if 'language' in data:
+            return data['language']
+
         for k in data:
             if 'content_' in k:
                 return k.rsplit('_', 1)[-1]
@@ -336,7 +339,6 @@ def prune(data: list) -> dict:
     """Recursively remove keys with None or empty values from a dictionary."""
     return {k: v for k, v in data
             if not k.startswith('_')
-            and k != 'language'
             and v not in (None, False, '')}
 
 
