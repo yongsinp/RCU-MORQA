@@ -63,8 +63,8 @@ class MorqaData(ABC):
     def __str__(self) -> str:
         ...
 
-    @staticmethod
-    def _get_language(data: dict) -> str:
+    @classmethod
+    def _get_language(cls, data: dict, default: str = "en") -> str:
         """Determine the language of the data based on keys"""
         if 'language' in data:
             return data['language']
@@ -72,7 +72,9 @@ class MorqaData(ABC):
         for k in data:
             if 'content_' in k:
                 return k.rsplit('_', 1)[-1]
-        raise ValueError("Could not determine language from data")
+
+        cls.LOGGER.warning('Could not determine language from data. Defaulting to "en".')
+        return default
 
     @staticmethod
     def prune(data: list) -> dict:
