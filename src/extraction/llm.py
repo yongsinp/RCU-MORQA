@@ -333,7 +333,7 @@ class LlmExtractor(Extractor):
                         if end > 0:
                             self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
             except Exception as e:
-                self.logger.error("JSON parsing error: {}\n{}".format(e, response))
+                self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
 
             for response, answer in zip(new_document.responses, answers):
                 if answer:
