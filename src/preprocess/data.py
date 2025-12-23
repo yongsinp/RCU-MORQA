@@ -332,7 +332,7 @@ class Document(MorqaData):
         )
 
 
-def prune(data: list) -> list:
+def prune(data: list) -> dict:
     """Recursively remove keys with None or empty values from a dictionary."""
     return {k: v for k, v in data
             if not k.startswith('_')
