@@ -1,6 +1,7 @@
 import copy
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from src.preprocess.data import Document, Annotation, Attribute, Label, IMPLICIT_QUESTTYP
 
@@ -42,7 +43,8 @@ class Extractor(ABC):
         return new_document
 
     @staticmethod
-    def _create_annotation(text: str, start: int, end: int) -> Annotation:
+    def _create_annotation(text: str, start: int, end: int, doc: str = "", label: Label = Label.QUESTION,
+                           att_id: Optional[str]= None) -> Annotation:
         """Creates a default question Annotation.
 
         `doc`, `ent_id`, and `att.id` have empty values and should be assigned later.
@@ -56,12 +58,12 @@ class Extractor(ABC):
             The created Annotation.
         """
         return Annotation(
-            att=Attribute(text=text),
+            att=Attribute(text=text, id=att_id),
             start=start,
             end=end,
-            doc="",
+            doc=doc,
             ent_id="",
-            label=Label.QUESTION
+            label=label
         )
 
     @staticmethod
