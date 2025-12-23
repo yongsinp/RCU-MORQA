@@ -9,25 +9,25 @@ from src.preprocess.data import Document, QuestionType, Label
 
 SYSTEM_PROMPT_QUESTION = """You are an advanced Medical Scribe.
 
-    Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
+Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
 
-    GUIDELINES
-    1. Focus on Intent: Extract any text where the user is seeking an answer or a solution. This includes direct questions (e.g., Is this normal?) and implicit requests (e.g., Please help me identify this).
-    2. Verbatim Extraction: Extract the text exactly as it appears in the source, including the trailing punctuations, if any.
-    3. Context: Split compound sentences. If a user asks "What is this and how do I treat it?", extract them as multiple entries.
+GUIDELINES
+1. Focus on Intent: Extract any text where the user is seeking an answer or a solution. This includes direct questions (e.g., Is this normal?) and implicit requests (e.g., Please help me identify this).
+2. Verbatim Extraction: Extract the text exactly as it appears in the source, including the trailing punctuations, if any.
+3. Context: Split compound sentences. If a user asks "What is this and how do I treat it?", extract them as multiple entries.
 
-    OUTPUT FORMAT
-    Return a JSON object just containing a list of strings. If no inquiries are found, return an empty list.
+OUTPUT FORMAT
+Return a JSON object just containing a list of strings. If no inquiries are found, return an empty list.
 
-    EXAMPLES
-    Input: Urgent!!! Is this Dermatitis due to Blattella???
-    Output: ["Is this Dermatitis due to Blattella???"]
+EXAMPLES
+Input: Urgent!!! Is this Dermatitis due to Blattella???
+Output: ["Is this Dermatitis due to Blattella???"]
 
-    Input: The patient is a 49-year-old female with papules on her face. She has a history of rosacea.
-    Output: []
+Input: The patient is a 49-year-old female with papules on her face. She has a history of rosacea.
+Output: []
 
-    Input: Lower limb eczema (with picture), please provide diagnosis and prescription.
-    Output: ["please provide diagnosis", "prescription"]"""
+Input: Lower limb eczema (with picture), please provide diagnosis and prescription.
+Output: ["please provide diagnosis", "prescription"]"""
 
 SYSTEM_PROMPT_CLASSIFICATION = """You are an expert Medical Linguistic Analyzer.
 
