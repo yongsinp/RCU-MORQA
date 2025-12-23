@@ -339,7 +339,8 @@ def prune(data: list) -> dict:
     """Recursively remove keys with None or empty values from a dictionary."""
     return {k: v for k, v in data
             if not k.startswith('_')
-            and v not in (None, False, '')}
+            and v not in (None, '')
+            and v is not False}  # We want to avoid (0 == False) == True for indices
 
 
 # List of valid QuestionTypes for implicit questions, sorted for id assignment
