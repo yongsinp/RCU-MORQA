@@ -1,11 +1,9 @@
-import os
 from collections import Counter
 from functools import singledispatch
 from typing import Union
 
 from src.eval.eval import is_overlapping
 from src.preprocess.data import Document
-from src.util.io import read_json
 
 
 @singledispatch
@@ -19,24 +17,27 @@ def eval(gold_data: Union[Document, list[Document]], pred_data: Union[Document, 
 def _(gold_data: Document, pred_data: Document, exact_match: bool = False, match_attr: bool = False) -> Counter[str]:
     metrics = Counter()
 
-    predictions = set(pred_data.questions)
-    for gold in gold_data.questions:
-        for pred in predictions:
-            if is_overlapping(gold, pred, exact_match=exact_match, match_attr=match_attr):
-                metrics['TP'] += 1
-                predictions.remove(pred)
-                break
-        else:
-            metrics['FN'] += 1
+    for key, golds in gold_data.annotations.items():
+        preds = pred_data.annotations.get(key, [])
 
-    golds = set(gold_data.questions)
-    for pred in pred_data.questions:
+        pred_candiates = set(preds)
         for gold in golds:
-            if is_overlapping(gold, pred, exact_match=exact_match, match_attr=match_attr):
-                golds.remove(gold)
-                break
-        else:
-            metrics['FP'] += 1
+            for pred in pred_candiates:
+                if is_overlapping(gold, pred, exact_match=exact_match, match_attr=match_attr):
+                    metrics['TP'] += 1
+                    pred_candiates.remove(pred)
+                    break
+            else:
+                metrics['FN'] += 1
+
+        gold_candidates = set(golds)
+        for pred in preds:
+            for gold in gold_candidates:
+                if is_overlapping(gold, pred, exact_match=exact_match, match_attr=match_attr):
+                    gold_candidates.remove(gold)
+                    break
+            else:
+                metrics['FP'] += 1
 
     return metrics
 
