@@ -69,6 +69,14 @@ class MorqaData(ABC):
                 return k.rsplit('_', 1)[-1]
         raise ValueError("Could not determine language from data")
 
+    @staticmethod
+    def prune(data: list) -> dict:
+        """Recursively remove keys with None or empty values from a dictionary."""
+        return {k: v for k, v in data
+                if not k.startswith('_')
+                and v not in (None, '')
+                and v is not False}  # We want to avoid (0 == False) == True for indices
+
     @classmethod
     @abstractmethod
     def from_dict(cls, data: dict) -> "MorqaData":
@@ -193,7 +201,7 @@ class Response(MorqaData):
     def from_dict(cls, data: dict) -> "Response":
         language = cls._get_language(data)
         return cls(
-            annotations={"query_title" if "title" in k else "query_content": [Annotation.from_dict(ann) for ann in v]
+            annotations={k.rsplit("_", 1)[0]: [Annotation.from_dict(ann) for ann in v]
                          for k, v in data["annotations"].items()},
             author_id=str(data.get('author_id', "")),
             content=str(data.get(f'content_{language}', "")),
@@ -333,14 +341,6 @@ class Document(MorqaData):
             responses=[Response.from_dict(resp) for resp in data['responses']],
             language=language,
         )
-
-
-def prune(data: list) -> dict:
-    """Recursively remove keys with None or empty values from a dictionary."""
-    return {k: v for k, v in data
-            if not k.startswith('_')
-            and v not in (None, '')
-            and v is not False}  # We want to avoid (0 == False) == True for indices
 
 
 # List of valid QuestionTypes for implicit questions, sorted for id assignment
