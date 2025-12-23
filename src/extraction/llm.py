@@ -5,7 +5,7 @@ from abc import abstractmethod
 from ast import literal_eval
 
 from src.extraction.extractor import Extractor
-from src.preprocess.data import Document, QuestionType, Label
+from src.preprocess.data import Document, QuestionType, Polarity, Label
 
 SYSTEM_PROMPT_QUESTION = """You are an advanced Medical Scribe.
 
@@ -256,7 +256,19 @@ class LlmExtractor(Extractor):
             json_str = match.group(0) if match else '{}'
             json_str = json_str.replace("'", '"')
             classes = literal_eval(json_str)
-            return classes if 'polarity' in classes and 'type' in classes else {}
+
+            # Clean up keys and values
+            cleaned_classes = {}
+            for k, v in classes.items():
+                k_clean = k.strip().lower()
+                v_clean = v.strip().lower()
+
+                if k_clean == 'polarity':
+                    cleaned_classes[k_clean] = v_clean if v_clean in Polarity else None
+                elif k_clean == 'type':
+                    cleaned_classes[k_clean] = v_clean if v_clean in QuestionType else None
+
+            return cleaned_classes
         except Exception as e:
             self.logger.error("JSON parsing error: {}\n{}".format(e, response))
             return {}
