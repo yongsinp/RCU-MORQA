@@ -1,11 +1,7 @@
-import os
 from functools import singledispatch
 from typing import Any, Union
 
-from sklearn.metrics import precision_recall_fscore_support, classification_report
-
 from src.preprocess.data import Document, QuestionType
-from src.util.io import read_json
 
 
 @singledispatch
