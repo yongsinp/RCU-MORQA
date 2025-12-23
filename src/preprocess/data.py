@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import os
 from abc import abstractmethod, ABC
 from collections import Counter, defaultdict
@@ -47,6 +48,10 @@ class Value(MorqaAttr):
 
 class MorqaData(ABC):
     """Base class for MORQA data structures."""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.LOGGER = logging.getLogger(f"{__name__}.{cls.__name__}")
 
     def __eq__(self, other):
         if not isinstance(other, Attribute):
