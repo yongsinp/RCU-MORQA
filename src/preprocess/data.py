@@ -226,6 +226,10 @@ class QaPair(MorqaData):
 
         return "\n".join(lines)
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "QaPair":
+        raise NotImplementedError("Use Document.qa_pairs property to create QaPair instances.")
+
 
 @dataclass
 class Document(MorqaData):
