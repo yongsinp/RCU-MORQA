@@ -181,6 +181,7 @@ class Response(MorqaData):
     author_id: str
     content: str
     response_num: str
+    language: str = "en"
 
     def __str__(self) -> str:
         lines = [
@@ -206,6 +207,7 @@ class Response(MorqaData):
             author_id=str(data.get('author_id', "")),
             content=str(data.get(f'content_{language}', "")),
             response_num=str(data.get('response_num', "")),
+            language=language,
         )
 
 
