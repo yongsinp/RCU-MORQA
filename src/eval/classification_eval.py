@@ -18,20 +18,19 @@ def _(gold_data: Document, pred_data: Document) -> dict[str, list[Any]]:
     gold_types = []
     pred_types = []
 
-    for key, gold_questions in gold_data.annotations.items():
-        for gold_question, pred_question in zip(gold_questions, pred_data.annotations.get(key, [])):
-            # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
-            if gold_question.att.is_implicit:
-                continue
+    for gold_question, pred_question in zip(gold_data.questions, pred_data.questions):
+        # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
+        if gold_question.att.is_implicit:
+            continue
 
-            # We don't have enough instances of NOT_CC questions
-            if gold_question.att.questtyp == QuestionType.NOT_CC:
-                continue
+        # We don't have enough instances of NOT_CC questions
+        if gold_question.att.questtyp == QuestionType.NOT_CC:
+            continue
 
-            gold_polarities.append(gold_question.att.polarity)
-            gold_types.append(gold_question.att.questtyp)
-            pred_polarities.append(pred_question.att.polarity)
-            pred_types.append(pred_question.att.questtyp)
+        gold_polarities.append(gold_question.att.polarity)
+        gold_types.append(gold_question.att.questtyp)
+        pred_polarities.append(pred_question.att.polarity)
+        pred_types.append(pred_question.att.questtyp)
 
     return {
         'gold_polarities': gold_polarities,

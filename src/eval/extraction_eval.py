@@ -20,12 +20,12 @@ def _(gold_data: Document, pred_data: Document, exact_match: bool = False, match
     for key, golds in gold_data.annotations.items():
         preds = pred_data.annotations.get(key, [])
 
-        pred_candiates = set(preds)
+        pred_candidates = set(preds)
         for gold in golds:
-            for pred in pred_candiates:
+            for pred in pred_candidates:
                 if is_overlapping(gold, pred, exact_match=exact_match, match_attr=match_attr):
                     metrics['TP'] += 1
-                    pred_candiates.remove(pred)
+                    pred_candidates.remove(pred)
                     break
             else:
                 metrics['FN'] += 1

@@ -1,32 +1,33 @@
+import copy
 import logging
 import re
 from abc import abstractmethod
 from ast import literal_eval
 
 from src.extraction.extractor import Extractor
-from src.preprocess.data import Document, QuestionType, Polarity
+from src.preprocess.data import Document, QuestionType, Polarity, Label
 
 SYSTEM_PROMPT_QUESTION = """You are an advanced Medical Scribe.
 
-    Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
+Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
 
-    GUIDELINES
-    1. Focus on Intent: Extract any text where the user is seeking an answer or a solution. This includes direct questions (e.g., Is this normal?) and implicit requests (e.g., Please help me identify this).
-    2. Verbatim Extraction: Extract the text exactly as it appears in the source, including the trailing punctuations, if any.
-    3. Context: Split compound sentences. If a user asks "What is this and how do I treat it?", extract them as multiple entries.
+GUIDELINES
+1. Focus on Intent: Extract any text where the user is seeking an answer or a solution. This includes direct questions (e.g., Is this normal?) and implicit requests (e.g., Please help me identify this).
+2. Verbatim Extraction: Extract the text exactly as it appears in the source, including the trailing punctuations, if any.
+3. Context: Split compound sentences. If a user asks "What is this and how do I treat it?", extract them as multiple entries.
 
-    OUTPUT FORMAT
-    Return a JSON object just containing a list of strings. If no inquiries are found, return an empty list.
+OUTPUT FORMAT
+Return a JSON object just containing a list of strings. If no inquiries are found, return an empty list.
 
-    EXAMPLES
-    Input: Urgent!!! Is this Dermatitis due to Blattella???
-    Output: ["Is this Dermatitis due to Blattella???"]
+EXAMPLES
+Input: Urgent!!! Is this Dermatitis due to Blattella???
+Output: ["Is this Dermatitis due to Blattella???"]
 
-    Input: The patient is a 49-year-old female with papules on her face. She has a history of rosacea.
-    Output: []
+Input: The patient is a 49-year-old female with papules on her face. She has a history of rosacea.
+Output: []
 
-    Input: Lower limb eczema (with picture), please provide diagnosis and prescription.
-    Output: ["please provide diagnosis", "prescription"]"""
+Input: Lower limb eczema (with picture), please provide diagnosis and prescription.
+Output: ["please provide diagnosis", "prescription"]"""
 
 SYSTEM_PROMPT_CLASSIFICATION = """You are an expert Medical Linguistic Analyzer.
 
@@ -64,8 +65,72 @@ Input: Will it heal without deforming?
 Output: {"polarity": "binary", "type": "outcome_prediction"}
 
 Input: is the condition severe?
-Output: {"polarity": "binary", "type": "assessment"}
-"""
+Output: {"polarity": "binary", "type": "assessment"}"""
+
+SYSTEM_PROMPT_ANSWER = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to extract only the minimum necessary sentences that directly answer the provided questions.
+
+INPUT DATA
+You will receive:
+1. Questions: A list of strings (phrased differently but asking the same thing).
+2. Polarity: (binary, categorical, or open).
+3. Question Type: (identification, assessment, advice, outcome_prediction).
+4. Responses: A list of strings to analyze.
+
+DEFINITIONS
+Use these definitions strictly to determine relevance:
+1. Polarity:
+   - binary: Questions logically answerable with "Yes" or "No" (e.g., "Is it X?"). A relevant answer might not say "Yes/No" explicitly but provides the confirmation or refutation (e.g., "It is Y" implies "No" to "Is it X?").
+   - categorical: Questions presenting specific choices.
+   - open: Questions requiring description, explanation, or lists.
+
+2. Question Type:
+   - identification: Identifying the wound/disease cause, state, pathology, or name.
+   - assessment: Evaluating severity, urgency, or current status.
+   - advice: Actionable steps, tests, treatments, or prescriptions.
+   - outcome_prediction: Predictions on recovery or permanent effects.
+
+PROCESSING LOGIC
+For each item in the "Responses" list, perform the following steps:
+
+Step 1: Determine Relevance Strategy
+   - IF the "Questions" list contains valid strings: You are looking for sentences that specifically address the semantic intent of those questions.
+   - IF the "Questions" list is empty ("") or contains only empty strings: You are looking for any sentences within the response that match the provided "Question Type".
+
+Step 2: Sentence-Level Extraction
+Split the response into individual sentences. Analyze each sentence to see if it qualifies as an answer.
+   - Condition A (Type Match): The sentence content must semantically align with the provided "Question Type". (e.g., If Question Type is "advice", but the sentence is a diagnosis/identification like "It is Eczema", it is NOT a match).
+   - Condition B (Answer Match): If questions are provided, the sentence must directly answer the inquiry.
+   - Note: For Binary Identification questions (e.g., "Is it Tinea?"), a sentence identifying a different disease (e.g., "It is Psoriasis") IS a valid answer because it implicitly answers "No".
+
+Step 3: Formatting
+   - Extract the qualifying sentences verbatim. Do not paraphrase.
+   - Combine multiple relevant sentences from a single response with their original punctuation.
+   - If no sentences in a response meet the criteria, the result for that index is an empty string "".
+   - Maintain a strict one-to-one mapping with the input "Responses" list.
+
+EXAMPLES
+Example 1
+Input: Question: ["Pygmy Moss?"], Polarity: binary, Type: identification, Response: ["Frictional Lichenoid Eruption", "Frictional lichenoid rash doesn't seem to be the case, but it appears to be some kind of lichenoid rash.", "Glossy Moss"] 
+Output: ["Frictional Lichenoid Eruption", "Frictional lichenoid rash doesn't seem to be the case, but it appears to be some kind of lichenoid rash.", "Glossy Moss"]
+
+Example 2
+Input: Question: ["What skin disease?", "What is this emergency?"], Polarity: open, Type: identification, Response: ["Tension blister", "Papular urticaria", "For the itching diagnosis, a blister puncture will suffice.", "Papular urticaria, topical use of Lugen Shi lotion."]
+Output: ["Tension blister", "Papular urticaria", "For the itching diagnosis, a blister puncture will suffice.", "Papular urticaria, topical use of Lugen Shi lotion."]
+
+Example 3
+Input: Q: [""], Polarity: open, Type: identification, Response: ["Elbow Black Acanthosis Nigricans", "Frictional Hyperkeratosis"]
+Output: ["Elbow Black Acanthosis Nigricans", "Frictional Hyperkeratosis"]
+
+Example 4
+Input: Q: ["I suspect it's tinea, could an expert please confirm this?"], Polarity: binary, Type: identification, Response: ["The original poster is requested to provide more medical history. A sudden increase in blood count may suggest erysipelas, while a chronic process could indicate tuberculosis or even leprosy."]
+Output: ["A sudden increase in blood count may suggest erysipelas, while a chronic process could indicate tuberculosis or even leprosy."]
+
+Example 3
+Input: Q: ["What should we do?"], Polarity: binary, Type: advice, Response: ["Early Stage of Eczema in Children", "Eczema", "Eczema...............", "Eczema is easy to treat for some, but not for others."]
+Output: ["", "", "", ""]
+
+OUTPUT FORMAT
+Return strictly a JSON list of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -232,3 +297,58 @@ class LlmExtractor(Extractor):
             question.att.questtyp = pred.get('type')
 
         return new_doument
+
+    def extract_answers(self, document: Document) -> Document:
+        """Extracts answers from the given document using the LLM.
+
+        Args:
+            document: The Document to extract answers from.
+        Returns:
+            A new Document with extracted answer Annotations. All other attributes are copied from the input document except for response annotations.
+        """
+        new_document = copy.deepcopy(document)
+
+        responses = []
+        for response in new_document.responses:
+            # Collect response texts
+            responses.append(response.content)
+            # Clear response annotations
+            response.annotations = {key: [] for key in response.annotations}
+
+        for id_, qa_pair in new_document.qa_pairs.items():
+            # Create input
+            questions = [q.att.text for q in qa_pair.questions]
+            polarity = str(qa_pair.questions[0].att.polarity)
+            questtyp = str(qa_pair.questions[0].att.questtyp)
+            input = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
+
+            try:
+                llm_response = self._call_api(input, SYSTEM_PROMPT_ANSWER)
+            except Exception as e:
+                self.logger.error("API error: {}".format(e))
+                continue
+
+            answers = []
+            try:
+                match = re.search(r'\[.*?\]', llm_response, re.S)
+                json_str = match.group(0) if match else '[]'
+                json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
+                extractions = literal_eval(json_str)
+
+                for response, extraction in zip(responses, extractions):
+                    start, end = self._find_spans(response, extraction)
+                    if start != end:
+                        answers.append(self._create_annotation(extraction, start, end, doc=f"{document.post_id}.ann",
+                                                               label=Label.SHORTEST_ANSWER, att_id=id_))
+                    else:
+                        answers.append(None)
+                        if end > 0:
+                            self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
+            except Exception as e:
+                self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
+
+            for response, answer in zip(new_document.responses, answers):
+                if answer:
+                    response.annotations['content'].append(answer)
+
+        return new_document

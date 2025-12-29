@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import os
 from abc import abstractmethod, ABC
 from collections import Counter, defaultdict
@@ -48,6 +49,10 @@ class Value(MorqaAttr):
 class MorqaData(ABC):
     """Base class for MORQA data structures."""
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.LOGGER = logging.getLogger(f"{__name__}.{cls.__name__}")
+
     def __eq__(self, other):
         if not isinstance(other, Attribute):
             return False
@@ -58,8 +63,8 @@ class MorqaData(ABC):
     def __str__(self) -> str:
         ...
 
-    @staticmethod
-    def _get_language(data: dict) -> str:
+    @classmethod
+    def _get_language(cls, data: dict, default: str = "en") -> str:
         """Determine the language of the data based on keys"""
         if 'language' in data:
             return data['language']
@@ -67,7 +72,9 @@ class MorqaData(ABC):
         for k in data:
             if 'content_' in k:
                 return k.rsplit('_', 1)[-1]
-        raise ValueError("Could not determine language from data")
+
+        cls.LOGGER.warning('Could not determine language from data. Defaulting to "en".')
+        return default
 
     @staticmethod
     def prune(data: list) -> dict:
@@ -181,6 +188,7 @@ class Response(MorqaData):
     author_id: str
     content: str
     response_num: str
+    language: str = "en"
 
     def __str__(self) -> str:
         lines = [
@@ -206,6 +214,7 @@ class Response(MorqaData):
             author_id=str(data.get('author_id', "")),
             content=str(data.get(f'content_{language}', "")),
             response_num=str(data.get('response_num', "")),
+            language=language,
         )
 
 
