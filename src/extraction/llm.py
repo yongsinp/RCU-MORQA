@@ -67,7 +67,7 @@ Output: {"polarity": "binary", "type": "outcome_prediction"}
 Input: is the condition severe?
 Output: {"polarity": "binary", "type": "assessment"}"""
 
-SYSTEM_PROMPT_ANSWER = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to process a list of "Responses" against a set of "Questions" (which share a single intent) and extract specific sentences that answer the questions.
+SYSTEM_PROMPT_ANSWER = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to extract only the minimum necessary sentences that directly answer the provided questions.
 
 INPUT DATA
 You will receive:
@@ -130,7 +130,7 @@ Input: Q: ["What should we do?"], Polarity: binary, Type: advice, Response: ["Ea
 Output: ["", "", "", ""]
 
 OUTPUT FORMAT
-Return strictly a JSON list of strings."""
+Return strictly a JSON list of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
