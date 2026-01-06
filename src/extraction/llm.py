@@ -253,3 +253,64 @@ class LlmExtractor(Extractor):
                     response.annotations['content'].append(answer)
 
         return new_document
+
+    def extract_iaa(self, document: Document) -> Document:
+        """Extracts Medical IAA annotations from the given document using the LLM.
+
+        Args:
+            document: The Document to extract Medical IAA annotations from.
+        Returns:
+            A new Document with extracted Medical IAA Annotations. All other attributes are copied from the input document except for medical_iaa annotations.
+        """
+        new_document = copy.deepcopy(document)
+
+        responses = []
+        for response in new_document.responses:
+            # Collect response texts
+            responses.append(response.content)
+            # Clear medical_iaa annotations
+            response.annotations = {k: [item for item in v if item.label != Label.MEDICAL_IAA]
+                                    for k, v in response.annotations.items()}
+
+        # Get LLM response
+        try:
+            llm_response = self._call_api(str(responses), SYSTEM_PROMPT_IAA)
+        except Exception as e:
+            self.logger.error("API error: {}".format(e))
+            return new_document
+
+        # Parse LLM response
+        extractions = []
+        try:
+            json_str = self._get_outermost_list(llm_response)
+            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
+            extractions = literal_eval(json_str)
+        except Exception as e:
+            self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
+            return new_document
+
+        # Create Medical IAA annotations
+        iaa_annotations = []
+        for response, extraction in zip(responses, extractions):
+            if not extraction:
+                iaa_annotations.append([])
+                continue
+
+            annotations = []
+
+            for item in extraction:
+                start, end = self._find_spans(response, item)
+                if start != end:
+                    annotations.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
+                                                                 label=Label.MEDICAL_IAA))
+                else:
+                    if end > 0:
+                        self.logger.error("Span not found ({}): {}".format(document.post_id, item))
+
+            iaa_annotations.append(annotations)
+
+        # Add Medical IAA annotations to responses
+        for response, iaa_annotation in zip(new_document.responses, iaa_annotations):
+            response.annotations['content'].extend(iaa_annotation)
+
+        return  new_document
