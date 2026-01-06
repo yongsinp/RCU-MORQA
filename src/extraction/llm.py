@@ -25,18 +25,6 @@ class LlmExtractor(Extractor):
         super().__init__(model_name)
         self.max_output_tokens = max_output_tokens
 
-    @abstractmethod
-    def _call_api(self, text: str, system_prompt: str) -> str:
-        """Calls the LLM API with the given text and system prompt.
-
-        Args:
-            text: The input text to process.
-            system_prompt: The system prompt to guide the LLM.
-        Returns:
-            The LLM's response as a string.
-        """
-        ...
-
     @staticmethod
     def _find_spans(text: str, subtext: str) -> tuple[int, int]:
         """Finds the start and end indices of subtext in text, case-insensitive.
@@ -55,6 +43,43 @@ class LlmExtractor(Extractor):
                 return i, i + len(subtext)
 
         return 0, 0
+
+    @staticmethod
+    def _get_outermost_list(text: str) -> str:
+        """Extracts the outermost list from a string representation of a list.
+
+        Args:
+            text: The string to extract the list from.
+        Returns:
+            The extracted list as a string.
+        Raises:
+            ValueError: If failed to extract the list.
+        """
+
+        start = text.find('[')
+        depth = 0
+
+        for i in range(start, len(text)):
+            if text[i] == '[':
+                depth += 1
+            elif text[i] == ']':
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+
+        raise ValueError("Failed to extract outermost list from text")
+
+    @abstractmethod
+    def _call_api(self, text: str, system_prompt: str) -> str:
+        """Calls the LLM API with the given text and system prompt.
+
+        Args:
+            text: The input text to process.
+            system_prompt: The system prompt to guide the LLM.
+        Returns:
+            The LLM's response as a string.
+        """
+        ...
 
     @abstractmethod
     def get_max_tokens(self, data: list[str]) -> int:
