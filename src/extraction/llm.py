@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from src.extraction.extractor import Extractor
 from src.preprocess.data import Document, QuestionType, Polarity, Label
-from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER
+from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
