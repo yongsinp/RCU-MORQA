@@ -156,14 +156,12 @@ class LlmExtractor(Extractor):
         Returns:
             A dictionary with 'polarity' and 'type' if classification is successful, otherwise an empty dict.
         """
-        try:
-            response = self._call_api(question, SYSTEM_PROMPT_CLASSIFICATION)
-        except Exception as e:
-            self.logger.error("API error: {}".format(e))
+        llm_response: str = self._get_llm_response(question, SYSTEM_PROMPT_CLASSIFICATION)
+        if not llm_response:
             return {}
 
         try:
-            match = re.search(r'\{.*?\}', response, re.S)
+            match = re.search(r'\{.*?\}', llm_response, re.S)
             json_str = match.group(0) if match else '{}'
             json_str = json_str.replace("'", '"')
             classes = literal_eval(json_str)
@@ -180,8 +178,8 @@ class LlmExtractor(Extractor):
                     cleaned_classes[k_clean] = v_clean if v_clean in QuestionType else None
 
             return cleaned_classes
-        except Exception as e:
-            self.logger.error("JSON parsing error: {}\n{}".format(e, response))
+        except Exception as error:
+            self.logger.error("JSON parsing error: {}\n{}".format(error, llm_response))
             return {}
 
     def classify_questions(self, document: Document) -> Document:
