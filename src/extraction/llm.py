@@ -256,32 +256,13 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted Medical IAA Annotations. All other attributes are copied from the input document except for medical_iaa annotations.
         """
-        new_document = copy.deepcopy(document)
+        # Create a new document to return
+        new_document = self._get_new_document(document, False, False, [Label.MEDICAL_IAA])
+        responses = [response.content for response in new_document.responses]
 
-        responses = []
-        for response in new_document.responses:
-            # Collect response texts
-            responses.append(response.content)
-            # Clear medical_iaa annotations
-            response.annotations = {k: [item for item in v if item.label != Label.MEDICAL_IAA]
-                                    for k, v in response.annotations.items()}
-
-        # Get LLM response
-        try:
-            llm_response = self._call_api(str(responses), SYSTEM_PROMPT_IAA)
-        except Exception as e:
-            self.logger.error("API error: {}".format(e))
-            return new_document
-
-        # Parse LLM response
-        extractions = []
-        try:
-            json_str = self._get_outermost_list(llm_response)
-            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-            extractions = literal_eval(json_str)
-        except Exception as e:
-            self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
-            return new_document
+        # Extract Medical IAA using LLM
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_IAA)
+        extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
         # Create Medical IAA annotations
         iaa_annotations = []
