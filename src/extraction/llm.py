@@ -6,7 +6,8 @@ from ast import literal_eval
 
 from src.extraction.extractor import Extractor
 from src.preprocess.data import Document, QuestionType, Polarity, Label
-from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA
+from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA, \
+    SYSTEM_PROMPT_PROGNOSIS
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -116,7 +117,7 @@ class LlmExtractor(Extractor):
         Args:
             document: The Document to extract questions from.
         Returns:
-            A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations and responses.
+            A new Document with extracted question Annotations. All other attributes are copied from the input document except for Annotations and Responses.
         """
         # Create a new document to return
         new_document = self._get_new_document(document)
@@ -331,4 +332,45 @@ class LlmExtractor(Extractor):
         for response, iaa_annotation in zip(new_document.responses, iaa_annotations):
             response.annotations['content'].extend(iaa_annotation)
 
-        return  new_document
+        return new_document
+
+    def extract_prognosis(self, document: Document) -> Document:
+        """Extracts prognosis annotations from the given document using the LLM.
+
+        Args:
+            document: The Document to extract prognosis annotations from.
+        Returns:
+            A new Document with extracted prognosis Annotations. All other attributes are copied from the input document except for prognosis annotations.
+        """
+        new_document = self._get_new_document(document, False, False, [Label.PROGNOSIS])
+        responses = [response.content for response in new_document.responses]
+
+        # Get LLM response
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_PROGNOSIS)
+        extractions: list[str] = self._extract_list_from_llm_response(llm_response)
+
+        # Create prognosis annotations
+        annotations = []
+        for response, extraction in zip(responses, extractions):
+            if not extraction:
+                annotations.append([])
+                continue
+
+            prognoses = []
+
+            for item in extraction:
+                start, end = self._find_spans(response, item)
+                if start != end:
+                    prognoses.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
+                                                             label=Label.PROGNOSIS))
+                else:
+                    if end > 0:
+                        self.logger.error("Span not found ({}): {}".format(document.post_id, item))
+
+            annotations.append(prognoses)
+
+        # Add prognosis annotations to responses
+        for response, prognosis_annotation in zip(new_document.responses, annotations):
+            response.annotations['content'].extend(prognosis_annotation)
+
+        return new_document
