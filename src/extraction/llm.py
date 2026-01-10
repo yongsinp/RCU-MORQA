@@ -265,28 +265,28 @@ class LlmExtractor(Extractor):
         extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
         # Create Medical IAA annotations
-        iaa_annotations = []
+        annotations = []
         for response, extraction in zip(responses, extractions):
             if not extraction:
-                iaa_annotations.append([])
+                annotations.append([])
                 continue
 
-            annotations = []
+            iaas = []
 
             for item in extraction:
                 start, end = self._find_spans(response, item)
                 if start != end:
-                    annotations.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
-                                                                 label=Label.MEDICAL_IAA))
+                    iaas.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
+                                                        label=Label.MEDICAL_IAA))
                 else:
                     if end > 0:
                         self.logger.error("Span not found ({}): {}".format(document.post_id, item))
 
-            iaa_annotations.append(annotations)
+            annotations.append(iaas)
 
         # Add Medical IAA annotations to responses
-        for response, iaa_annotation in zip(new_document.responses, iaa_annotations):
-            response.annotations['content'].extend(iaa_annotation)
+        for response, ann in zip(new_document.responses, annotations):
+            response.annotations['content'].extend(ann)
 
         return new_document
 
@@ -326,7 +326,7 @@ class LlmExtractor(Extractor):
             annotations.append(prognoses)
 
         # Add prognosis annotations to responses
-        for response, prognosis_annotation in zip(new_document.responses, annotations):
-            response.annotations['content'].extend(prognosis_annotation)
+        for response, ann in zip(new_document.responses, annotations):
+            response.annotations['content'].extend(ann)
 
         return new_document
