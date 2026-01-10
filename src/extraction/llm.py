@@ -213,49 +213,35 @@ class LlmExtractor(Extractor):
         Args:
             document: The Document to extract answers from.
         Returns:
-            A new Document with extracted answer Annotations. All other attributes are copied from the input document except for response annotations.
+            A new Document with extracted answer Annotations. All other attributes are copied from the input document except for shortest_answer annotations.
         """
-        new_document = copy.deepcopy(document)
-
-        responses = []
-        for response in new_document.responses:
-            # Collect response texts
-            responses.append(response.content)
-            # Clear response annotations
-            response.annotations = {key: [] for key in response.annotations}
+        new_document = self._get_new_document(document, False, False, [Label.SHORTEST_ANSWER])
+        responses = [response.content for response in new_document.responses]
 
         for id_, qa_pair in new_document.qa_pairs.items():
             # Create input
             questions = [q.att.text for q in qa_pair.questions]
             polarity = str(qa_pair.questions[0].att.polarity)
             questtyp = str(qa_pair.questions[0].att.questtyp)
-            input = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
+            input_ = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
 
-            try:
-                llm_response = self._call_api(input, SYSTEM_PROMPT_ANSWER)
-            except Exception as e:
-                self.logger.error("API error: {}".format(e))
-                continue
+            # Extract answers using LLM
+            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER)
+            extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
+            # Create answer annotations
             answers = []
-            try:
-                match = re.search(r'\[.*?\]', llm_response, re.S)
-                json_str = match.group(0) if match else '[]'
-                json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-                extractions = literal_eval(json_str)
+            for response, extraction in zip(responses, extractions):
+                start, end = self._find_spans(response, extraction)
+                if start != end:
+                    answers.append(self._create_annotation(extraction, start, end, doc=f"{document.post_id}.ann",
+                                                           label=Label.SHORTEST_ANSWER, att_id=id_))
+                else:
+                    answers.append(None)
+                    if end > 0:
+                        self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
 
-                for response, extraction in zip(responses, extractions):
-                    start, end = self._find_spans(response, extraction)
-                    if start != end:
-                        answers.append(self._create_annotation(extraction, start, end, doc=f"{document.post_id}.ann",
-                                                               label=Label.SHORTEST_ANSWER, att_id=id_))
-                    else:
-                        answers.append(None)
-                        if end > 0:
-                            self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
-            except Exception as e:
-                self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
-
+            # Add answers annotations to responses
             for response, answer in zip(new_document.responses, answers):
                 if answer:
                     response.annotations['content'].append(answer)
