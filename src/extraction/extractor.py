@@ -56,7 +56,7 @@ class Extractor(ABC):
 
     @staticmethod
     def _create_annotation(text: str, start: int, end: int, doc: str = "", label: Label = Label.QUESTION,
-                           att_id: Optional[str]= None) -> Annotation:
+                           att_id: Optional[str] = None) -> Annotation:
         """Creates a default question Annotation.
 
         `doc`, `ent_id`, and `att.id` have empty values and should be assigned later.
