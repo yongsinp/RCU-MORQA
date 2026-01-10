@@ -1,4 +1,3 @@
-import copy
 import logging
 import re
 from abc import abstractmethod
@@ -6,7 +5,8 @@ from ast import literal_eval
 
 from src.extraction.extractor import Extractor
 from src.preprocess.data import Document, QuestionType, Polarity, Label
-from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA
+from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA, \
+    SYSTEM_PROMPT_PROGNOSIS
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -92,47 +92,57 @@ class LlmExtractor(Extractor):
         """
         ...
 
+    def _get_llm_response(self, llm_input: str, system_prompt: str) -> str:
+        """Gets the LLM response for the given input and system prompt."""
+        try:
+            return self._call_api(llm_input, system_prompt)
+        except Exception as error:
+            self.logger.error(f"API error: {error}")
+            return ""
+
+    def _extract_list_from_llm_response(self, llm_response: str) -> list:
+        """Parses the LLM response to extract a list."""
+        try:
+            json_str = self._get_outermost_list(llm_response)
+            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
+            return literal_eval(json_str)
+        except Exception as e:
+            self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
+            return []
+
     def _extract_questions(self, document: Document) -> Document:
         """Extracts questions from the given document using the LLM.
 
         Args:
             document: The Document to extract questions from.
         Returns:
-            A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations and responses.
+            A new Document with extracted question Annotations. All other attributes are copied from the input document except for Annotations and Responses.
         """
         # Create a new document to return
+        # Responses are cleared because they are longer relevant after new questions are extracted
         new_document = self._get_new_document(document)
 
-        # Extract questions using LLM
         for key in ('query_title', 'query_content'):
             text = getattr(document, key).strip()
             if not text:
                 continue
 
-            try:
-                response = self._call_api(text, SYSTEM_PROMPT_QUESTION)
-            except Exception as e:
-                self.logger.error("API error ({}): {}".format(document.post_id, e))
-                continue
+            # Extract questions using LLM
+            llm_response: str = self._get_llm_response(text, SYSTEM_PROMPT_QUESTION)
+            extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
+            # Create question annotations
             annotations = []
-            try:
-                match = re.search(r'\[.*?\]', response, re.S)
-                json_str = match.group(0) if match else '[]'
-                json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-                extractions = literal_eval(json_str)
 
-                for extraction in extractions:
+            for extraction in extractions:
+                start, end = self._find_spans(text, extraction)
+                if start == end:
+                    extraction = extraction[:-1]  # Retry without trailing punctuation
                     start, end = self._find_spans(text, extraction)
-                    if start == end:
-                        extraction = extraction[:-1]  # Try without trailing punctuation
-                        start, end = self._find_spans(text, extraction)
-                    if start != end:
-                        annotations.append(self._create_annotation(extraction, start, end))
-                    else:
-                        self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
-            except Exception as e:
-                self.logger.error("JSON parsing error: {}\n{}".format(e, response))
+                if start != end:
+                    annotations.append(self._create_annotation(extraction, start, end))
+                else:
+                    self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
 
             new_document.annotations[key] = annotations
 
@@ -146,14 +156,14 @@ class LlmExtractor(Extractor):
         Returns:
             A dictionary with 'polarity' and 'type' if classification is successful, otherwise an empty dict.
         """
-        try:
-            response = self._call_api(question, SYSTEM_PROMPT_CLASSIFICATION)
-        except Exception as e:
-            self.logger.error("API error: {}".format(e))
+        # Get LLM response
+        llm_response: str = self._get_llm_response(question, SYSTEM_PROMPT_CLASSIFICATION)
+        if not llm_response:
             return {}
 
         try:
-            match = re.search(r'\{.*?\}', response, re.S)
+            # Extract dictionary from LLM response
+            match = re.search(r'\{.*?\}', llm_response, re.S)
             json_str = match.group(0) if match else '{}'
             json_str = json_str.replace("'", '"')
             classes = literal_eval(json_str)
@@ -170,8 +180,8 @@ class LlmExtractor(Extractor):
                     cleaned_classes[k_clean] = v_clean if v_clean in QuestionType else None
 
             return cleaned_classes
-        except Exception as e:
-            self.logger.error("JSON parsing error: {}\n{}".format(e, response))
+        except Exception as error:
+            self.logger.error("JSON parsing error: {}\n{}".format(error, llm_response))
             return {}
 
     def classify_questions(self, document: Document) -> Document:
@@ -182,9 +192,10 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations.
         """
-        new_doument = self._get_new_document(document, clear_annotations=False)
+        # Create a new document to return
+        new_document = self._get_new_document(document, clear_annotations=False, clear_responses=False)
 
-        for question in new_doument.questions:
+        for question in new_document.questions:
             # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
             if question.att.is_implicit:
                 continue
@@ -193,11 +204,12 @@ class LlmExtractor(Extractor):
             if question.att.questtyp == QuestionType.NOT_CC:
                 continue
 
+            # Classify question using LLM
             pred = self._classify_question(question.att.text)
             question.att.polarity = pred.get('polarity')
             question.att.questtyp = pred.get('type')
 
-        return new_doument
+        return new_document
 
     def extract_answers(self, document: Document) -> Document:
         """Extracts answers from the given document using the LLM.
@@ -205,49 +217,36 @@ class LlmExtractor(Extractor):
         Args:
             document: The Document to extract answers from.
         Returns:
-            A new Document with extracted answer Annotations. All other attributes are copied from the input document except for response annotations.
+            A new Document with extracted answer Annotations. All other attributes are copied from the input document except for shortest_answer annotations.
         """
-        new_document = copy.deepcopy(document)
-
-        responses = []
-        for response in new_document.responses:
-            # Collect response texts
-            responses.append(response.content)
-            # Clear response annotations
-            response.annotations = {key: [] for key in response.annotations}
+        # Create a new document to return
+        new_document = self._get_new_document(document, False, False, [Label.SHORTEST_ANSWER])
+        responses = [response.content for response in new_document.responses]
 
         for id_, qa_pair in new_document.qa_pairs.items():
             # Create input
             questions = [q.att.text for q in qa_pair.questions]
             polarity = str(qa_pair.questions[0].att.polarity)
             questtyp = str(qa_pair.questions[0].att.questtyp)
-            input = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
+            input_ = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
 
-            try:
-                llm_response = self._call_api(input, SYSTEM_PROMPT_ANSWER)
-            except Exception as e:
-                self.logger.error("API error: {}".format(e))
-                continue
+            # Extract answers using LLM
+            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER)
+            extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
+            # Create annotations
             answers = []
-            try:
-                match = re.search(r'\[.*?\]', llm_response, re.S)
-                json_str = match.group(0) if match else '[]'
-                json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-                extractions = literal_eval(json_str)
+            for response, extraction in zip(responses, extractions):
+                start, end = self._find_spans(response, extraction)
+                if start != end:
+                    answers.append(self._create_annotation(extraction, start, end, doc=f"{document.post_id}.ann",
+                                                           label=Label.SHORTEST_ANSWER, att_id=id_))
+                else:
+                    answers.append(None)
+                    if end > 0:
+                        self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
 
-                for response, extraction in zip(responses, extractions):
-                    start, end = self._find_spans(response, extraction)
-                    if start != end:
-                        answers.append(self._create_annotation(extraction, start, end, doc=f"{document.post_id}.ann",
-                                                               label=Label.SHORTEST_ANSWER, att_id=id_))
-                    else:
-                        answers.append(None)
-                        if end > 0:
-                            self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
-            except Exception as e:
-                self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
-
+            # Add annotations to responses
             for response, answer in zip(new_document.responses, answers):
                 if answer:
                     response.annotations['content'].append(answer)
@@ -262,55 +261,78 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted Medical IAA Annotations. All other attributes are copied from the input document except for medical_iaa annotations.
         """
-        new_document = copy.deepcopy(document)
+        # Create a new document to return
+        new_document = self._get_new_document(document, False, False, [Label.MEDICAL_IAA])
 
-        responses = []
-        for response in new_document.responses:
-            # Collect response texts
-            responses.append(response.content)
-            # Clear medical_iaa annotations
-            response.annotations = {k: [item for item in v if item.label != Label.MEDICAL_IAA]
-                                    for k, v in response.annotations.items()}
+        # Extract Medical IAAs using LLM
+        responses = [response.content for response in new_document.responses]
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_IAA)
+        extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
-        # Get LLM response
-        try:
-            llm_response = self._call_api(str(responses), SYSTEM_PROMPT_IAA)
-        except Exception as e:
-            self.logger.error("API error: {}".format(e))
-            return new_document
-
-        # Parse LLM response
-        extractions = []
-        try:
-            json_str = self._get_outermost_list(llm_response)
-            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-            extractions = literal_eval(json_str)
-        except Exception as e:
-            self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
-            return new_document
-
-        # Create Medical IAA annotations
-        iaa_annotations = []
+        # Create annotations
+        annotations = []
         for response, extraction in zip(responses, extractions):
             if not extraction:
-                iaa_annotations.append([])
+                annotations.append([])
                 continue
 
-            annotations = []
+            iaas = []
 
             for item in extraction:
                 start, end = self._find_spans(response, item)
                 if start != end:
-                    annotations.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
-                                                                 label=Label.MEDICAL_IAA))
+                    iaas.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
+                                                        label=Label.MEDICAL_IAA))
                 else:
                     if end > 0:
                         self.logger.error("Span not found ({}): {}".format(document.post_id, item))
 
-            iaa_annotations.append(annotations)
+            annotations.append(iaas)
 
-        # Add Medical IAA annotations to responses
-        for response, iaa_annotation in zip(new_document.responses, iaa_annotations):
-            response.annotations['content'].extend(iaa_annotation)
+        # Add annotations to responses
+        for response, ann in zip(new_document.responses, annotations):
+            response.annotations['content'].extend(ann)
 
-        return  new_document
+        return new_document
+
+    def extract_prognosis(self, document: Document) -> Document:
+        """Extracts prognosis annotations from the given document using the LLM.
+
+        Args:
+            document: The Document to extract prognosis annotations from.
+        Returns:
+            A new Document with extracted prognosis Annotations. All other attributes are copied from the input document except for prognosis annotations.
+        """
+        # Create a new document to return
+        new_document = self._get_new_document(document, False, False, [Label.PROGNOSIS])
+
+        # Extract prognoses using LLM
+        responses = [response.content for response in new_document.responses]
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_PROGNOSIS)
+        extractions: list[str] = self._extract_list_from_llm_response(llm_response)
+
+        # Create annotations
+        annotations = []
+        for response, extraction in zip(responses, extractions):
+            if not extraction:
+                annotations.append([])
+                continue
+
+            prognoses = []
+
+            for item in extraction:
+                start, end = self._find_spans(response, item)
+                if start != end:
+                    prognoses.append(self._create_annotation(item, start, end, doc=f"{document.post_id}.ann",
+                                                             label=Label.PROGNOSIS))
+                else:
+                    if end > 0:
+                        self.logger.error("Span not found ({}): {}".format(document.post_id, item))
+
+            annotations.append(prognoses)
+
+        # Add annotations to responses
+        for response, ann in zip(new_document.responses, annotations):
+            response.annotations['content'].extend(ann)
+
+        return new_document

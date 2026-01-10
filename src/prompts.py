@@ -112,7 +112,7 @@ Output: ["", "", "", ""]
 OUTPUT FORMAT
 Return strictly a JSON list of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
-SYSTEM_PROMPT_IAA = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all text that qualifies as Medical Identification, Assessment, or Advice (IAA) from a response, distinguishing it from Prognosis.
+SYSTEM_PROMPT_IAA = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Medical Identification, Assessment, or Advice (IAA) from a response, distinguishing it from Prognosis.
 
 INPUT DATA
 You will receive:
@@ -126,15 +126,14 @@ Use these definitions strictly to determine relevance. A sentence is IAA if it d
 4. Followup: Describes a referral to a particular department or specialist or asking the patient to follow up in a certain amount of time.
 
 EXCLUSION CRITERIA
-Prognosis: You must EXCLUDE sentences that predict possible future outcomes. These are classified as Prognosis, not IAA.
+Prognosis: Exclude sentences that predict possible future outcomes. These are classified as Prognosis, not IAA. However, they are not mutually exclusive; a sentence can be both IAA and Prognosis if it describes the current condition while also predicting future outcomes.
 
 PROCESSING LOGIC
 For each item in the Response list, perform the following steps:
 Step 1: Analyze the entire text of the response. Do not stop after finding the first relevant sentence. A single response may contain multiple distinct IAA components (e.g., a diagnosis at the beginning and a treatment recommendation at the end), separated by non-relevant text.
 Step 2: Analyze every sentence. Keep the sentence only if it meets the IAA definition (Problem, Test, Treatment, or Followup).
 Multi-Sentence Spans: A single piece of advice or assessment may span multiple consecutive sentences. Extract them as one unless they require different sets of labels (e.g. separate as different IAAs if first sentence satisfies Problem but the next sentence satisfies both Problem and Treatment). If they are non-consecutive (e.g. they have Prognosis or irrelevant sentences in between), extract them as separate IAAs even if they have an identical IAA attribute. Include all sentences that contribute to the actionable advice or current assessment.
-Step 3: Extract the qualifying sentences verbatim. Group ALL extracted IAA sentences from a single response into a list (e.g. ["IAA Sentence 1", "IAA Sentence 2", ...]).
-If no sentences meet the criteria, the result is an empty list [].
+Step 3: Extract the qualifying sentences verbatim. Group ALL extracted IAA sentences from a single response into a list (e.g. ["IAA Sentence 1", "IAA Sentence 2", ...]). If no sentences meet the criteria, the result is an empty list [].
 
 EXAMPLES
 Example 1
@@ -148,16 +147,47 @@ Segment 4: "However, it is necessary..." introduces a requirement for confirmati
 Segment 5: "If the scabies..." returns to 'Problem' and 'Treatment'.
 Because the specific combination of labels (Problem, Test, Treatment, Followup) shifts at each sentence boundary, they are returned as individual strings rather than a single merged block.
 In the second response, the separation is caused by the double newline (\n\n). This formatting is non-clinical whitespace and does not qualify as Medical Identification, Assessment, or Advice (IAA). Because you should extract only valid IAA content and strictly excludes non-relevant text, the \n\n is not captured. This creates a gap in the extraction, resulting in two distinct, non-contiguous spans of advice.
-
 Example 2
 Input: ["Recommend evaluation in ER for Xray to evaluate for fracture. The nail will take up to 6 months to grow back."]
 Output: [["Recommend evaluation in ER for Xray to evaluate for fracture.", "The nail will take up to 6 months to grow back."]]
 Reasoning: The first sentence qualifies as an IAA because it recommends evaluation (Test, Followup). While the second provides information on the expected recovery timeline for the nail (Prognosis), but also describes current condition (Problem).
-
 Example 3
 Input: ["First of all, you can't scratch it anymore. Apply some anti-inflammatory topical cream. Observe it for a few days.", "Eczema?", "It is estimated to be a disease related to capillary hemangioma. Continue to observe, and if it enlarges, surgical removal is recommended.", "Is it folliculitis?", "It is recommended to first use Band-Aid externally and pay attention to cleanliness! Observe for a few days and see. If there is no improvement, go to a regular hospital for a check-up.", "Considering it is a capillary hemangioma, laser treatment is recommended.", "Capillary hemangioma???", "Hemangioma...", "Considered to be a capillary hemangioma.", "The possibility of purulent granuloma is relatively high.", "The description is about capillary hemangioma. Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "Pyogenic granuloma, laser treatment.", "The possibility of a skin hemangioma is still relatively high, laser or liquid nitrogen therapy should be considered.", "Capillary hemangioma, apply Mupirocin externally, observe!", "Hemangioma, is it possible?", "Don't rush to pick at it yet.", "After scratching the papular urticaria, closely follow up and revisit after a week.", "Consider multiple angiomas.", "Consider doing a color Doppler ultrasound.", "Can't pick with hands anymore.", "Considering hemangioma, it's very common in the chest area. Use laser after infection control.", "I am considering diseases related to angioma. I suggest that there is currently no need for medication and we should observe first. It could also be pigmentation.", "Artificial dermatitis, it will get better on its own in a few days."]
 Output: [["First of all, you can't scratch it anymore. Apply some anti-inflammatory topical cream. Observe it for a few days."], ["Eczema?"], ["It is estimated to be a disease related to capillary hemangioma.", "Continue to observe, and if it enlarges, surgical removal is recommended."], ["Is it folliculitis?"], ["It is recommended to first use Band-Aid externally and pay attention to cleanliness! Observe for a few days and see.", "If there is no improvement, go to a regular hospital for a check-up"], ["Considering it is a capillary hemangioma, laser treatment is recommended"], ["Capillary hemangioma???"], ["Hemangioma..."], ["Considered to be a capillary hemangioma."], ["The possibility of purulent granuloma is relatively high."], ["Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "The description is about capillary hemangioma"], ["Pyogenic granuloma, laser treatment."], ["The possibility of a skin hemangioma is still relatively high, laser or liquid nitrogen therapy should be considered."], ["Capillary hemangioma, apply Mupirocin externally, observe!"], ["Hemangioma, is it possible?"], ["Don't rush to pick at it yet."], ["After scratching the papular urticaria, closely follow up and revisit after a week."], ["Consider multiple angiomas."], ["Consider doing a color Doppler ultrasound."], ["Can't pick with hands anymore."], ["Use laser after infection control.", "Considering hemangioma, it's very common in the chest area."], ["It could also be pigmentation.", "I suggest that there is currently no need for medication and we should observe first.", "I am considering diseases related to angioma."], ["Artificial dermatitis, it will get better on its own in a few days."]]
-Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "Artificial dermatitis, it will get better on its own in a few days." both describe possible outcomes and is a prognosis. However, the former is part of a larger treatment recommendation and the latter includes a diagnosis, so they also qualify as IAA and are included in the output.
+Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "Artificial dermatitis, it will get better on its own in a few days." are both prognoses because they describe possible outcomes. However, since the former is part of a broader treatment recommendation and the latter includes a diagnosis, they also qualify as IAA and are therefore included in the output.
+
+OUTPUT FORMAT
+Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
+
+SYSTEM_PROMPT_PROGNOSIS = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Prognosis from a response, distinguishing it from IAA (Identification, Assessment, or Advice).
+
+INPUT DATA
+You will receive:
+1. Response: A list of strings (medical answers) to analyze.
+
+DEFINITIONS
+A sentence is Prognosis if it describes future outcomes, predictions, or expectations.
+
+EXCLUSION CRITERIA
+IAA: Exclude sentences that describe the current diagnosis/condition, current test requirements, current treatment steps, or current referral/follow-up instructions. These are classified as IAA (present), not Prognosis (future). However, they are not mutually exclusive; a sentence can be both IAA and Prognosis if it describes the current condition while also predicting future outcomes.
+
+PROCESSING LOGIC
+For each item in the Response list, perform the following steps:
+Step 1: Analyze the entire text of the response. Do not stop after finding the first relevant sentence as multiple Prognosis can exist.
+Step 2: Analyze every sentence. Keep the sentence only if it meets the Prognosis definition.
+Multi-Sentence Spans: A single prognosis prediction may span multiple consecutive sentences. Extract consecutive Prognosis sentences as one single string.
+Split/Gap: If relevant sentences are non-consecutive (separated by IAA, irrelevant text, or structural breaks like \n\n), extract them as separate strings.
+Step 3: Extraction Extract the qualifying sentences verbatim. Group ALL extracted Prognosis strings from a single response into a list. If no sentences meet the criteria, the result is an empty list [].
+
+EXAMPLES
+Example 1
+Input: ["The description is about capillary hemangioma. Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "After scratching the papular urticaria, closely follow up and revisit after a week.", "Artificial dermatitis, it will get better on its own in a few days."]
+Output: [["Don't squeeze it anymore, it's prone to infection."], [], ["Artificial dermatitis, it will get better on its own in a few days."]]
+Reasoning: “Don’t squeeze it anymore, it’s prone to infection.” and “Artificial dermatitis, it will get better on its own in a few days.” are both IAAs because the former is part of a broader treatment recommendation and the latter includes a diagnosis. However, since they also describe possible outcomes, they qualify as Prognosis and are therefore included in the output.
+Example 2
+Input: ["The nail will likely grow back but can take up to 6 months. It is a good sign that the nail bed is growing back. It is difficult to say if there will be a deformity but no further intervention is recommended at this time."]
+Output: [["The nail will likely grow back but can take up to 6 months.", "It is difficult to say if there will be a deformity but no further intervention is recommended at this time."]]
+Reasoning: The first and third sentences describe future outcomes regarding nail growth and potential deformity, thus qualifying as Prognosis. The second sentence does not predict future outcomes, so it is excluded.
 
 OUTPUT FORMAT
 Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
