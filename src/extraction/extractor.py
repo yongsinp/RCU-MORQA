@@ -22,13 +22,15 @@ class Extractor(ABC):
         self.logger = logging.getLogger(self.model_name)
 
     @staticmethod
-    def _get_new_document(document: Document, clear_annotations: bool = True, clear_responses: bool = True) -> Document:
+    def _get_new_document(document: Document, clear_annotations: bool = True, clear_responses: bool = True,
+                          remove_labels: Optional[list[Label]] = None) -> Document:
         """Creates a new Document with empty annotations and responses.
 
         Args:
             document: The original Document.
             clear_annotations: Whether to clear existing annotations (questions). This only removes `Annotation` objects and leaves the structure intact.
             clear_responses: Whether to clear existing responses.
+            remove_labels: If provided, annotations with these labels will be removed from annotations (questions) and responses.
         Returns:
             A new Document with cleared annotations and responses.
         """
@@ -39,6 +41,16 @@ class Extractor(ABC):
             new_document.annotations = {key: [] for key in new_document.annotations}
         if clear_responses:
             new_document.responses.clear()
+
+        # Remove annotations with specified labels
+        if remove_labels:
+            labels = set(remove_labels)
+
+            for k, annotations in new_document.annotations.items():
+                new_document.annotations[k] = [ann for ann in annotations if ann.label not in labels]
+            for response in new_document.responses:
+                response.annotations = {k: [ann for ann in annotations if ann.label not in labels]
+                                        for k, annotations in response.annotations.items()}
 
         return new_document
 
