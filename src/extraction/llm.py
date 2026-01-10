@@ -92,6 +92,24 @@ class LlmExtractor(Extractor):
         """
         ...
 
+    def _get_llm_response(self, llm_input: str, system_prompt: str) -> str:
+        """Gets the LLM response for the given input and system prompt."""
+        try:
+            return self._call_api(llm_input, system_prompt)
+        except Exception as error:
+            self.logger.error(f"API error: {error}")
+            return ""
+
+    def _extract_list_from_llm_response(self, llm_response: str) -> list:
+        """Parses the LLM response to extract a list."""
+        try:
+            json_str = self._get_outermost_list(llm_response)
+            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
+            return literal_eval(json_str)
+        except Exception as e:
+            self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
+            return []
+
     def _extract_questions(self, document: Document) -> Document:
         """Extracts questions from the given document using the LLM.
 
