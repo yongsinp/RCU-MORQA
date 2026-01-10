@@ -190,9 +190,9 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations.
         """
-        new_doument = self._get_new_document(document, clear_annotations=False)
+        new_document = self._get_new_document(document, clear_annotations=False, clear_responses=False)
 
-        for question in new_doument.questions:
+        for question in new_document.questions:
             # Implicit questions have 'open' polarity and can have any of the question types defined in `Attribute.IMPLICIT_QUESTTYP`
             if question.att.is_implicit:
                 continue
@@ -205,7 +205,7 @@ class LlmExtractor(Extractor):
             question.att.polarity = pred.get('polarity')
             question.att.questtyp = pred.get('type')
 
-        return new_doument
+        return new_document
 
     def extract_answers(self, document: Document) -> Document:
         """Extracts answers from the given document using the LLM.
