@@ -1,4 +1,3 @@
-import copy
 import logging
 import re
 from abc import abstractmethod
@@ -132,12 +131,13 @@ class LlmExtractor(Extractor):
             llm_response: str = self._get_llm_response(text, SYSTEM_PROMPT_QUESTION)
             extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
+            # Create question annotations
             annotations = []
 
             for extraction in extractions:
                 start, end = self._find_spans(text, extraction)
                 if start == end:
-                    extraction = extraction[:-1]  # Try without trailing punctuation
+                    extraction = extraction[:-1]  # Retry without trailing punctuation
                     start, end = self._find_spans(text, extraction)
                 if start != end:
                     annotations.append(self._create_annotation(extraction, start, end))
@@ -156,11 +156,13 @@ class LlmExtractor(Extractor):
         Returns:
             A dictionary with 'polarity' and 'type' if classification is successful, otherwise an empty dict.
         """
+        # Get LLM response
         llm_response: str = self._get_llm_response(question, SYSTEM_PROMPT_CLASSIFICATION)
         if not llm_response:
             return {}
 
         try:
+            # Extract dictionary from LLM response
             match = re.search(r'\{.*?\}', llm_response, re.S)
             json_str = match.group(0) if match else '{}'
             json_str = json_str.replace("'", '"')
@@ -190,6 +192,7 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted question Annotations. All other attributes are copied from the input document except for annotations.
         """
+        # Create a new document to return
         new_document = self._get_new_document(document, clear_annotations=False, clear_responses=False)
 
         for question in new_document.questions:
@@ -201,6 +204,7 @@ class LlmExtractor(Extractor):
             if question.att.questtyp == QuestionType.NOT_CC:
                 continue
 
+            # Classify question using LLM
             pred = self._classify_question(question.att.text)
             question.att.polarity = pred.get('polarity')
             question.att.questtyp = pred.get('type')
@@ -215,6 +219,7 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted answer Annotations. All other attributes are copied from the input document except for shortest_answer annotations.
         """
+        # Create a new document to return
         new_document = self._get_new_document(document, False, False, [Label.SHORTEST_ANSWER])
         responses = [response.content for response in new_document.responses]
 
@@ -229,7 +234,7 @@ class LlmExtractor(Extractor):
             llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER)
             extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
-            # Create answer annotations
+            # Create annotations
             answers = []
             for response, extraction in zip(responses, extractions):
                 start, end = self._find_spans(response, extraction)
@@ -241,7 +246,7 @@ class LlmExtractor(Extractor):
                     if end > 0:
                         self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
 
-            # Add answers annotations to responses
+            # Add annotations to responses
             for response, answer in zip(new_document.responses, answers):
                 if answer:
                     response.annotations['content'].append(answer)
@@ -258,13 +263,13 @@ class LlmExtractor(Extractor):
         """
         # Create a new document to return
         new_document = self._get_new_document(document, False, False, [Label.MEDICAL_IAA])
-        responses = [response.content for response in new_document.responses]
 
-        # Extract Medical IAA using LLM
+        # Extract Medical IAAs using LLM
+        responses = [response.content for response in new_document.responses]
         llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_IAA)
         extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
-        # Create Medical IAA annotations
+        # Create annotations
         annotations = []
         for response, extraction in zip(responses, extractions):
             if not extraction:
@@ -284,7 +289,7 @@ class LlmExtractor(Extractor):
 
             annotations.append(iaas)
 
-        # Add Medical IAA annotations to responses
+        # Add annotations to responses
         for response, ann in zip(new_document.responses, annotations):
             response.annotations['content'].extend(ann)
 
@@ -298,14 +303,15 @@ class LlmExtractor(Extractor):
         Returns:
             A new Document with extracted prognosis Annotations. All other attributes are copied from the input document except for prognosis annotations.
         """
+        # Create a new document to return
         new_document = self._get_new_document(document, False, False, [Label.PROGNOSIS])
-        responses = [response.content for response in new_document.responses]
 
-        # Get LLM response
+        # Extract prognoses using LLM
+        responses = [response.content for response in new_document.responses]
         llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_PROGNOSIS)
         extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
-        # Create prognosis annotations
+        # Create annotations
         annotations = []
         for response, extraction in zip(responses, extractions):
             if not extraction:
@@ -325,7 +331,7 @@ class LlmExtractor(Extractor):
 
             annotations.append(prognoses)
 
-        # Add prognosis annotations to responses
+        # Add annotations to responses
         for response, ann in zip(new_document.responses, annotations):
             response.annotations['content'].extend(ann)
 
