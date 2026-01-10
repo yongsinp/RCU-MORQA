@@ -5,8 +5,8 @@ from ast import literal_eval
 
 from src.extraction.extractor import Extractor
 from src.preprocess.data import Document, QuestionType, Polarity, Label
-from src.prompts import SYSTEM_PROMPT_QUESTION, SYSTEM_PROMPT_CLASSIFICATION, SYSTEM_PROMPT_ANSWER, SYSTEM_PROMPT_IAA, \
-    SYSTEM_PROMPT_PROGNOSIS
+from src.prompts import SYSTEM_PROMPT_QUESTION_EXTRACTION, SYSTEM_PROMPT_QUESTION_CLASSIFICATION, SYSTEM_PROMPT_ANSWER_EXTRACTION, SYSTEM_PROMPT_IAA_EXTRACTION, \
+    SYSTEM_PROMPT_PROGNOSIS_EXTRACTION
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -128,7 +128,7 @@ class LlmExtractor(Extractor):
                 continue
 
             # Extract questions using LLM
-            llm_response: str = self._get_llm_response(text, SYSTEM_PROMPT_QUESTION)
+            llm_response: str = self._get_llm_response(text, SYSTEM_PROMPT_QUESTION_EXTRACTION)
             extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
             # Create question annotations
@@ -157,7 +157,7 @@ class LlmExtractor(Extractor):
             A dictionary with 'polarity' and 'type' if classification is successful, otherwise an empty dict.
         """
         # Get LLM response
-        llm_response: str = self._get_llm_response(question, SYSTEM_PROMPT_CLASSIFICATION)
+        llm_response: str = self._get_llm_response(question, SYSTEM_PROMPT_QUESTION_CLASSIFICATION)
         if not llm_response:
             return {}
 
@@ -231,7 +231,7 @@ class LlmExtractor(Extractor):
             input_ = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
 
             # Extract answers using LLM
-            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER)
+            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER_EXTRACTION)
             extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
             # Create annotations
@@ -266,7 +266,7 @@ class LlmExtractor(Extractor):
 
         # Extract Medical IAAs using LLM
         responses = [response.content for response in new_document.responses]
-        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_IAA)
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_IAA_EXTRACTION)
         extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
         # Create annotations
@@ -308,7 +308,7 @@ class LlmExtractor(Extractor):
 
         # Extract prognoses using LLM
         responses = [response.content for response in new_document.responses]
-        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_PROGNOSIS)
+        llm_response: str = self._get_llm_response(str(responses), SYSTEM_PROMPT_PROGNOSIS_EXTRACTION)
         extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
         # Create annotations

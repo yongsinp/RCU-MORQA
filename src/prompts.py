@@ -1,4 +1,4 @@
-SYSTEM_PROMPT_QUESTION = """You are an advanced Medical Scribe. Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
+SYSTEM_PROMPT_QUESTION_EXTRACTION = """You are an advanced Medical Scribe. Your task is to identify and extract all text segments where the user is soliciting medical advice, diagnosis, opinion, or help.
 
 GUIDELINES
 1. Focus on Intent: Extract any text where the user is seeking an answer or a solution. This includes direct questions (e.g., Is this normal?) and implicit requests (e.g., Please help me identify this).
@@ -19,7 +19,7 @@ Example 3
 Input: Lower limb eczema (with picture), please provide diagnosis and prescription.
 Output: ["please provide diagnosis", "prescription"]"""
 
-SYSTEM_PROMPT_CLASSIFICATION = """You are an expert Medical Linguistic Analyzer. Your task is to classify a given medical question based on two specific dimensions: Polarity and Type.
+SYSTEM_PROMPT_QUESTION_CLASSIFICATION = """You are an expert Medical Linguistic Analyzer. Your task is to classify a given medical question based on two specific dimensions: Polarity and Type.
 
 DEFINITIONS
 1. Polarity:
@@ -55,7 +55,7 @@ Example 6
 Input: is the condition severe?
 Output: {"polarity": "binary", "type": "assessment"}"""
 
-SYSTEM_PROMPT_ANSWER = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to extract only the minimum necessary sentences that directly answer the provided questions.
+SYSTEM_PROMPT_ANSWER_EXTRACTION = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to extract only the minimum necessary sentences that directly answer the provided questions.
 
 INPUT DATA
 You will receive:
@@ -112,7 +112,7 @@ Output: ["", "", "", ""]
 OUTPUT FORMAT
 Return strictly a JSON list of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
-SYSTEM_PROMPT_IAA = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Medical Identification, Assessment, or Advice (IAA) from a response, distinguishing it from Prognosis.
+SYSTEM_PROMPT_IAA_EXTRACTION = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Medical Identification, Assessment, or Advice (IAA) from a response, distinguishing it from Prognosis.
 
 INPUT DATA
 You will receive:
@@ -159,7 +159,7 @@ Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "A
 OUTPUT FORMAT
 Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
-SYSTEM_PROMPT_PROGNOSIS = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Prognosis from a response, distinguishing it from IAA (Identification, Assessment, or Advice).
+SYSTEM_PROMPT_PROGNOSIS_EXTRACTION = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Prognosis from a response, distinguishing it from IAA (Identification, Assessment, or Advice).
 
 INPUT DATA
 You will receive:
