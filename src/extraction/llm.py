@@ -120,38 +120,29 @@ class LlmExtractor(Extractor):
             A new Document with extracted question Annotations. All other attributes are copied from the input document except for Annotations and Responses.
         """
         # Create a new document to return
+        # Responses are cleared because they are longer relevant after new questions are extracted
         new_document = self._get_new_document(document)
 
-        # Extract questions using LLM
         for key in ('query_title', 'query_content'):
             text = getattr(document, key).strip()
             if not text:
                 continue
 
-            try:
-                response = self._call_api(text, SYSTEM_PROMPT_QUESTION)
-            except Exception as e:
-                self.logger.error("API error ({}): {}".format(document.post_id, e))
-                continue
+            # Extract questions using LLM
+            llm_response: str = self._get_llm_response(text, SYSTEM_PROMPT_QUESTION)
+            extractions: list[str] = self._extract_list_from_llm_response(llm_response)
 
             annotations = []
-            try:
-                match = re.search(r'\[.*?\]', response, re.S)
-                json_str = match.group(0) if match else '[]'
-                json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-                extractions = literal_eval(json_str)
 
-                for extraction in extractions:
+            for extraction in extractions:
+                start, end = self._find_spans(text, extraction)
+                if start == end:
+                    extraction = extraction[:-1]  # Try without trailing punctuation
                     start, end = self._find_spans(text, extraction)
-                    if start == end:
-                        extraction = extraction[:-1]  # Try without trailing punctuation
-                        start, end = self._find_spans(text, extraction)
-                    if start != end:
-                        annotations.append(self._create_annotation(extraction, start, end))
-                    else:
-                        self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
-            except Exception as e:
-                self.logger.error("JSON parsing error: {}\n{}".format(e, response))
+                if start != end:
+                    annotations.append(self._create_annotation(extraction, start, end))
+                else:
+                    self.logger.error("Span not found ({}): {}".format(document.post_id, extraction))
 
             new_document.annotations[key] = annotations
 
