@@ -185,7 +185,7 @@ INPUT DATA
 2. IAA Texts: A list of strings (extracted IAA sentences) to classify.
 
 DEFINITIONS AND LABELS
-For each string, determine which of the following 4 labels apply. A single string may have multiple labels.
+For each string, determine which of the following 4 labels apply. A single string should have at least one label.
 problem: The text relates to a diagnosis, current condition, or identifying the problem.
 test: The text relates to a required or recommended diagnostic test, imaging, or lab work.
 treatment: The text relates to a required treatment, medication, or procedure.
@@ -194,7 +194,7 @@ followup: The text relates to referring the patient to a specific department or 
 ATTRIBUTES
 For each string, determine the integer value (0 or 1) for the following two attributes:
 1. is_severe (0 or 1): Set to 1 if the context implies the problem needs immediate medical attention. Mentions of "Emergency Room," "ER," or "Urgent Care" are strong clues for severity. If advice to see a specialist or follow up is given without urgency cues, set to 0. You must interpret the entire context instead of relying on keywords. If a mention of "Urgent Care" is qualified by a non-mandatory clue (e.g., "I recommend Urgent Care if you are interested in getting an X-ray"), set to 0 because the visit is optional.
-2. is_conditional (0 or 1): Set to 1 if the text has the 'followup' label and the action is explicitly optional or conditional. If the overall response says seeking medical attention is mandatory (the visit itself) but contains a condition for a specific procedure, set to 0. For example, "I would recommend that you go to the nearest Urgent Care... and get a tetanus vaccine if it has been over 5 years." Here, the visit is not conditional, only the vaccine is. Therefore, is_conditional should be 0.
+2. is_conditional (0 or 1): Set to 1 if and only if the labels include 'followup' AND the action is explicitly optional or conditional. Otherwise, set to 0. If the overall response says seeking medical attention is mandatory (the visit itself) but contains a condition for a specific procedure, set to 0. For example, "I would recommend that you go to the nearest Urgent Care... and get a tetanus vaccine if it has been over 5 years." Here, the visit is not conditional, only the vaccine is. Therefore, is_conditional should be 0.
 
 OUTPUT FORMAT
 Return a single JSON list of objects. Each object must contain:
