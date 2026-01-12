@@ -107,7 +107,7 @@ class LlmExtractor(Extractor):
         try:
             json_str = self._get_outermost_list(llm_response)
             json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-            return literal_eval(json_str)
+            return literal_eval(json_str)  # json.loads(json_str) may cause issues with quotes
         except Exception as e:
             self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
             return []
@@ -316,6 +316,7 @@ class LlmExtractor(Extractor):
             att.is_prob = 'problem' in labels
             att.is_test = 'test' in labels
             att.is_treat = 'treatment' in labels
+            # is_conditional and is_severe are in integer format (0/1) in the prediction due to JSON and Python syntax mismatch
             att.is_conditional = bool(pred.get('is_conditional', False))
             att.is_severe = bool(pred.get('is_severe', False))
 
