@@ -159,6 +159,54 @@ Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "A
 OUTPUT FORMAT
 Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
+SYSTEM_PROMPT_IAA_CLASSIFICATION = """You are an expert Medical Annotation Classifier. Your task is to analyze extracted "Medical Identification, Assessment, or Advice" (IAA) text and classify them according to specific clinical labels and attributes.
+
+INPUT DATA
+1. Context: The entire response text from which the IAA sentences were extracted.
+2. IAA Texts: A list of strings (extracted IAA sentences) to classify.
+
+DEFINITIONS AND LABELS
+For each string, determine which of the following 4 labels apply. A single string may have multiple labels.
+problem: The text relates to a diagnosis, current condition, or identifying the problem.
+test: The text relates to a required or recommended diagnostic test, imaging, or lab work.
+treatment: The text relates to a required treatment, medication, or procedure.
+followup: The text relates to referring the patient to a specific department or specialty, or asking them to follow up after a certain time.
+
+ATTRIBUTES
+For each string, determine the integer value (0 or 1) for the following two attributes:
+1. is_severe (0 or 1): Set to 1 if the context implies the problem needs immediate medical attention. Mentions of "Emergency Room," "ER," or "Urgent Care" are strong clues for severity. If advice to see a specialist or follow up is given without urgency cues, set to 0. You must interpret the entire context instead of relying on keywords. If a mention of "Urgent Care" is qualified by a non-mandatory clue (e.g., "I recommend Urgent Care if you are interested in getting an X-ray"), set to 0 because the visit is optional.
+2. is_conditional (0 or 1): Set to 1 if the text has the 'followup' label and the action is explicitly optional or conditional. If the overall response says seeking medical attention is mandatory (the visit itself) but contains a condition for a specific procedure, set to 0. For example, "I would recommend that you go to the nearest Urgent Care... and get a tetanus vaccine if it has been over 5 years." Here, the visit is not conditional, only the vaccine is. Therefore, is_conditional should be 0.
+
+OUTPUT FORMAT
+Return a single JSON list of objects. Each object must contain:
+"labels": A list of applicable strings ["problem", "test", "treatment", "followup"].
+"is_severe": Integer 0 or 1.
+"is_conditional": Integer 0 or 1.
+
+EXAMPLES
+Example 1
+Input: Context: "After the treatment of contact dermatitis and scabies, many patients show changes in dermatitis. On one hand, it is related to scabies itself, on the other hand, the treatment drugs mainly based on sulfur have a significant impact on the skin. Therefore, during and after the treatment, attention should be paid to avoid further damage and protect the skin. However, it is necessary to first confirm whether the scabies has been cured. If the scabies has been cured, the main focus should be on anti-allergy treatment.", IAA Texts: ["After the treatment of contact dermatitis and scabies, many patients show changes in dermatitis.", "On one hand, it is related to scabies itself, on the other hand, the treatment drugs mainly based on sulfur have a significant impact on the skin.", "Therefore, during and after the treatment, attention should be paid to avoid further damage and protect the skin.", "However, it is necessary to first confirm whether the scabies has been cured.", "If the scabies has been cured, the main focus should be on anti-allergy treatment."]
+Output: [{"labels": ["problem"], "is_severe": 0, "is_conditional": 0}, {"labels": ["problem", "treatment"], "is_severe": 0, "is_conditional": 0}, {"labels": ["treatment"], "is_severe": 0, "is_conditional": 0}, {"labels": ["followup", "problem"], "is_severe": 0, "is_conditional": 0}, {"labels": ["problem", "treatment"], "is_severe": 0, "is_conditional": 0}]
+
+Example 2
+Input: Context: "Recommend evaluation in ER for Xray to evaluate for fracture. The nail will take up to 6 months to grow back.", IAA Texts: ["Recommend evaluation in ER for Xray to evaluate for fracture.", "The nail will take up to 6 months to grow back."]
+Output: [{"labels": ["followup", "test"], "is_severe": 1, "is_conditional": 0}, {"labels": ["problem"], "is_severe": 0, "is_conditional": 0}]
+
+Example 3
+Input: Context: "It is estimated to be a disease related to capillary hemangioma. Continue to observe, and if it enlarges, surgical removal is recommended.", IAA Texts: ["It is estimated to be a disease related to capillary hemangioma.", "Continue to observe, and if it enlarges, surgical removal is recommended."]
+Output: [{"labels": ["problem"], "is_severe": 0, "is_conditional": 0}, {"labels": ["followup", "treatment"], "is_severe": 0, "is_conditional": 1}]
+
+Example 4
+Input: Context: "The laceration is not obviously infected but the stitches were likely removed prematurely. Clean with soap and water daily and cover with dry dressing. If there is pus or spreading redness seek evaluation in urgent care.", IAA Texts: ["The laceration is not obviously infected but the stitches were likely removed prematurely.", "Clean with soap and water daily and cover with dry dressing.", "If there is pus or spreading redness seek evaluation in urgent care."]
+Output: [{"labels": ["problem"], "is_severe": 0, "is_conditional": 0}, {"labels": ["treatment"], "is_severe": 0, "is_conditional": 0}, {"labels": ["followup"], "is_severe": 1, "is_conditional": 1}]
+
+Example 5
+Input: Context: "The bleeding is likely caused by a blood vessel at the site that has not yet clotted. Apply a pressure dressing with gauze and tape but you can wait until tomorrow to see a doctor unless you have symptoms such as continuous bleeding not controlled by the dressing.", IAA Texts: ["Apply a pressure dressing with gauze and tape but you can wait until tomorrow to see a doctor unless you have symptoms such as continuous bleeding not controlled by the dressing.", "The bleeding is likely caused by a blood vessel at the site that has not yet clotted."]
+Output: [{"labels": ["problem", "treatment", "followup"], "is_severe": 0, "is_conditional": 1}, {"labels": ["problem"], "is_severe": 0, "is_conditional": 0}]
+
+OUTPUT FORMAT
+Return strictly a JSON list of objects as specified above. Maintain a strict 1:1 mapping with the IAA Texts list from the Input."""
+
 SYSTEM_PROMPT_PROGNOSIS_EXTRACTION = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Prognosis from a response, distinguishing it from IAA (Identification, Assessment, or Advice).
 
 INPUT DATA
