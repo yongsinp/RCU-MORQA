@@ -78,11 +78,12 @@ class MorqaData(ABC):
 
     @staticmethod
     def prune(data: list) -> dict:
-        """Recursively remove keys with None or empty values from a dictionary."""
-        return {k: v for k, v in data
-                if not k.startswith('_')
+        """Recursively remove keys with None or empty values from a dictionary for a clean JSON output."""
+        return {k: k if isinstance(v, bool) else v  # Turn "is_prob": True into "is_prob": "is_prob"
+                for k, v in data
+                if not k.startswith('_')  # Remove private attributes like _qa_pairs
                 and v not in (None, '')
-                and v is not False}  # We want to avoid (0 == False) == True for indices
+                and v is not False}  # Avoid (0 == False) == True for indices
 
     @classmethod
     @abstractmethod
@@ -126,13 +127,13 @@ class Attribute(MorqaData):
         return cls(
             text=str(data.get('text', "")).replace('\n', ' '),
             id=str(data["id"]) if "id" in data else None,
-            is_conditional=data.get('is_conditional', False),
-            is_follup=data.get('is_follup', False),
-            is_implicit=data.get('is_implicit', False),
-            is_prob=data.get('is_prob', False),
-            is_severe=data.get('is_severe', False),
-            is_test=data.get('is_test', False),
-            is_treat=data.get('is_treat', False),
+            is_conditional='is_conditional' in data,
+            is_follup='is_follup' in data,
+            is_implicit='is_implicit' in data,
+            is_prob='is_prob' in data,
+            is_severe='is_severe' in data,
+            is_test='is_test' in data,
+            is_treat='is_treat' in data,
             polarity=Polarity(polarity) if (polarity := data.get("polarity")) else None,
             questtyp=QuestionType(questtyp) if (questtyp := data.get("questtyp")) else None,
             value=Value(value) if (value := data.get("value")) else None,
