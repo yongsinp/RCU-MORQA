@@ -2,11 +2,13 @@ import logging
 import re
 from abc import abstractmethod
 from ast import literal_eval
+from copy import deepcopy
 
 from src.extraction.extractor import Extractor
-from src.preprocess.data import Document, QuestionType, Polarity, Label
-from src.prompts import SYSTEM_PROMPT_QUESTION_EXTRACTION, SYSTEM_PROMPT_QUESTION_CLASSIFICATION, SYSTEM_PROMPT_ANSWER_EXTRACTION, SYSTEM_PROMPT_IAA_EXTRACTION, \
-    SYSTEM_PROMPT_PROGNOSIS_EXTRACTION
+from src.preprocess.data import Document, QuestionType, Polarity, Label, Attribute
+from src.prompts import SYSTEM_PROMPT_QUESTION_EXTRACTION, SYSTEM_PROMPT_QUESTION_CLASSIFICATION, \
+    SYSTEM_PROMPT_ANSWER_EXTRACTION, SYSTEM_PROMPT_IAA_EXTRACTION, \
+    SYSTEM_PROMPT_PROGNOSIS_EXTRACTION, SYSTEM_PROMPT_IAA_CLASSIFICATION
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -292,6 +294,60 @@ class LlmExtractor(Extractor):
         # Add annotations to responses
         for response, ann in zip(new_document.responses, annotations):
             response.annotations['content'].extend(ann)
+
+        return new_document
+
+    def classify_iaa(self, document: Document) -> Document:
+        """Classifies the Medical IAA annotations in the given document using the LLM.
+
+        Args:
+            document: The Document containing Medical IAA annotations to classify.
+        Returns:
+            A new Document with classified Medical IAA Annotations. All other attributes are copied from the input document except for medical_iaa annotations.
+        """
+
+        def set_attribute(att: Attribute, pred: dict) -> None:
+            labels = pred.get('labels', [])
+            if not labels:
+                self.logger.error(f"No labels predicted for IAA: Document ID {document.post_id}, Ent ID: {iaa.ent_id}")
+
+            # Set attributes based on labels and predictions
+            att.is_follup = 'followup' in labels
+            att.is_prob = 'problem' in labels
+            att.is_test = 'test' in labels
+            att.is_treat = 'treatment' in labels
+            att.is_conditional = bool(pred.get('is_conditional', False))
+            att.is_severe = bool(pred.get('is_severe', False))
+
+            # 'is_conditional' can only be True if 'followup' label is present
+            if att.is_conditional and not att.is_follup:
+                self.logger.error(
+                    f"Conflict in IAA attributes: 'is_conditional' is True but 'followup' label is missing. "
+                    f"Document ID {document.post_id}, Ent ID: {iaa.ent_id}")
+
+        # Create a new document to return
+        new_document = deepcopy(document)
+
+        for response in new_document.responses:
+            iaas = [ann for anns in response.annotations.values() for ann in anns if ann.label == Label.MEDICAL_IAA]
+            # Reset attributes to only contain text
+            for iaa in iaas:
+                iaa.att = Attribute(text=iaa.att.text)
+
+            # Skip if no IAAs are present
+            if not iaas:
+                continue
+
+            # Create input
+            input_ = f'Context: "{response.content}", IAA Texts: {[iaa.att.text for iaa in iaas]}'
+
+            # Classify IAAs using LLM
+            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_IAA_CLASSIFICATION)
+            preds = self._extract_list_from_llm_response(llm_response)
+
+            # Assign attributes to IAAs
+            for iaa, pred in zip(iaas, preds):
+                set_attribute(iaa.att, pred)
 
         return new_document
 
