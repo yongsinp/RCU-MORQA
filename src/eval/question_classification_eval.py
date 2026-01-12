@@ -1,7 +1,11 @@
+import os
 from functools import singledispatch
 from typing import Any, Union
 
+from sklearn.metrics import precision_recall_fscore_support, classification_report
+
 from src.preprocess.data import Document, QuestionType
+from src.util.io import read_json
 
 
 @singledispatch
@@ -60,3 +64,51 @@ def _(gold_data: list[Document], pred_data: list[Document]) -> dict[str, list[An
         'gold_types': gold_types,
         'pred_types': pred_types,
     }
+
+
+if __name__ == '__main__':
+    # Paths
+    gold_path = "../../data/rcu-en/"
+    pred_path = "../../out/question_classification/"
+
+    # File names
+    datasets = [
+        "iiyi",
+        "woundcare",
+    ]
+    splits = [
+        "train_gold",
+        "valid_gold",
+    ]
+    files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
+
+    # Model names
+    models = [dir_name for dir_name in os.listdir(pred_path) if os.path.isdir(os.path.join(pred_path, dir_name))]
+
+    for model in models:
+        print(f"Model: {model}")
+        for file in files:
+            print(f"\tFile: {file}")
+
+            gold_file = os.path.join(gold_path, file)
+            pred_file = os.path.join(pred_path, model, file)
+            gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
+            pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
+
+            result = eval(gold_data, pred_data)
+
+            # Polarity metrics
+            print("=== Polarity ===")
+            p, r, f1, _ = precision_recall_fscore_support(
+                result['gold_polarities'], result['pred_polarities'], average='weighted', zero_division=0
+            )
+            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
+            print(classification_report(result['gold_polarities'], result['pred_polarities']))
+
+            # Type metrics
+            print("\n=== Question Type ===")
+            p, r, f1, _ = precision_recall_fscore_support(
+                result['gold_types'], result['pred_types'], average='weighted', zero_division=0
+            )
+            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
+            print(classification_report(result['gold_types'], result['pred_types']))
