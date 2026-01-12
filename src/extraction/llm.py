@@ -228,7 +228,7 @@ class LlmExtractor(Extractor):
             questions = [q.att.text for q in qa_pair.questions]
             polarity = str(qa_pair.questions[0].att.polarity)
             questtyp = str(qa_pair.questions[0].att.questtyp)
-            input_ = f"Question: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
+            input_ = f"Questions: {questions}, Polarity: {polarity}, Type: {questtyp}, Response: {responses}"
 
             # Extract answers using LLM
             llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER_EXTRACTION)
