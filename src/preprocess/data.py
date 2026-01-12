@@ -112,7 +112,8 @@ class Attribute(MorqaData):
 
     def __post_init__(self):
         if self.is_conditional and not self.is_follup:
-            raise ValueError("is_conditional can only be True if is_follup is also True")
+            # raise ValueError("is_conditional can only be True if is_follup is also True")
+            self.LOGGER.error("is_conditional can only be True if is_follup is also True")
 
         if self.is_implicit and self.questtyp not in self.IMPLICIT_QUESTTYP:
             raise ValueError(f"Invalid questtyp ({self.questtyp}) for implicit question")
