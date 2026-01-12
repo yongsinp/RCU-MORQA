@@ -78,11 +78,12 @@ class MorqaData(ABC):
 
     @staticmethod
     def prune(data: list) -> dict:
-        """Recursively remove keys with None or empty values from a dictionary."""
-        return {k: v for k, v in data
-                if not k.startswith('_')
+        """Recursively remove keys with None or empty values from a dictionary for a clean JSON output."""
+        return {k: k if isinstance(v, bool) else v  # Turn "is_prob": True into "is_prob": "is_prob"
+                for k, v in data
+                if not k.startswith('_')  # Remove private attributes like _qa_pairs
                 and v not in (None, '')
-                and v is not False}  # We want to avoid (0 == False) == True for indices
+                and v is not False}  # Avoid (0 == False) == True for indices
 
     @classmethod
     @abstractmethod
