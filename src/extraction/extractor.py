@@ -52,6 +52,9 @@ class Extractor(ABC):
                 response.annotations = {k: [ann for ann in annotations if ann.label not in labels]
                                         for k, annotations in response.annotations.items()}
 
+        # Reset cached attributes
+        new_document.reset()
+
         return new_document
 
     @staticmethod

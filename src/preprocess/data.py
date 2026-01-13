@@ -262,9 +262,9 @@ class Document(MorqaData):
     query_title: str
     responses: list[Response]
     language: str = "en"
-    _questions: list[Annotation] = None
-    _answers: list[Annotation] = None
-    _qa_pairs: dict[str, QaPair] = None
+    _questions: Optional[list[Annotation]] = None
+    _answers: Optional[list[Annotation]] = None
+    _qa_pairs: Optional[dict[str, QaPair]] = None
 
     @property
     def questions(self) -> list[Annotation]:
@@ -352,6 +352,12 @@ class Document(MorqaData):
             responses=[Response.from_dict(resp) for resp in data['responses']],
             language=language,
         )
+
+    def reset(self):
+        """Reset cached properties."""
+        self._questions = None
+        self._answers = None
+        self._qa_pairs = None
 
 
 # List of valid QuestionTypes for implicit questions, sorted for id assignment
