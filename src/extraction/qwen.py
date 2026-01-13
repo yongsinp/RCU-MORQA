@@ -44,7 +44,7 @@ class QwenExtractor(LlmExtractor):
                 },
                 {
                     "role": "user",
-                    "content": f"Input: {query}\nOutput:"
+                    "content": f"Input: {query}\nOutput: "
                 },
             ],
             modalities=["text"],

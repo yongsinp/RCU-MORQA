@@ -58,7 +58,7 @@ class GeminiExtractor(LlmExtractor):
         response = self.client.models.generate_content(
             model=self.model_name,
             config=self.config,
-            contents=f"Input: {query}\nOutput:"
+            contents=f"Input: {query}\nOutput: "
         )
         return response.text
 
