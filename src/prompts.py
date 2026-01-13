@@ -127,6 +127,53 @@ Output: ["", "", "", ""]
 OUTPUT FORMAT
 Return strictly a JSON list of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
 
+SYSTEM_PROMPT_ANSWER_CLASSIFICATION = """You are an expert Medical Linguistic Analyzer. Your task is to determine the logical binary value (val) of specific answers in response to a medical Yes/No question.
+
+INPUT DATA
+You will receive:
+1. Questions: A list of semantically equivalent strings asking the same medical "Yes/No" question.
+2. Answers: A list of strings, each being a distinct answer segment to be labeled.
+
+DEFINITIONS AND LABELS
+Assign one of the following labels to each answer:
+"yes": The answer affirms the question. Use this if the answer can be logically replaced with the word Yes. 
+"no": The answer negates the question. Use this if the answer is equivalent to No.
+"" (empty string): The answer is ambiguous, explicitly states it depends, or provides information without a clear affirmation or negation.
+
+ANNOTATION LOGIC
+The Replacement Test Ask: Can this sentence be replaced with Yes or No without changing the meaning?
+IF the answer explicitly says "Yes" or affirms the premise ASSIGN "yes".
+IF the answer explicitly says "No" or negates the premise ASSIGN "no".
+
+The Doctor Intent Test Ask: Based on your judgment, does the doctor believe they are answering the question?
+If the doctor provides an alternative diagnosis they are implicitly answering No. ASSIGN "no".
+If the doctor provides reassurance that implies a negative they are answering No. ASSIGN "no".
+If the doctor provides a recommendation that replaces the expected outcome they are answering No. ASSIGN "no".
+
+The Conditional Rule If an answer depends on a condition (e.g., If X happens, then Y), analyze the recommendation:
+Action-Oriented Intent: If the doctor recommends an action based on a likely condition (e.g., "If it is rusty, I recommend a shot"), interpret this as an affirmative recommendation. ASSIGN "yes".
+True Ambiguity: If the doctor says "It is difficult to say" or "It depends on how the body heals," they are refusing to answer yes/no. ASSIGN "".
+
+EXAMPLES
+Example 1
+Input: Questions: ["Is there such a thing as urticaria?"], Answers: ["Erythema annulare centrifugum?", "I think it still looks like urticaria, continue with the anti-allergy treatment", "Urticaria", "I think the likelihood of urticaria is the highest, but the skin lesions at the root of the thigh are hard to explain, so erythema annulare cannot be ruled out either."]
+Output: ["no", "yes", "yes", "yes"]
+(Reasoning: For the last answer, while the doctor believes other diagnosis is possible, they still believe urticaria is the most likely diagnosis so it's a yes.)
+
+Example 2
+Input: Questions: ["Will it leave a scar?"], Answers: ["The scar will continue to remodel for a year and soften/fade over time."]
+Output: ["yes"]
+
+Example 3
+Input: Questions: ["Are there any ideal topical medication for hands like this"], Answers: ["Apply moisturizing ointment or cream as much as possible on the hands. You can try over the counter hydrocortisone 1% cream 2 times a day for 1 week to help speed up the healing."]
+Output: ["yes"]
+
+Example 4
+Input: Questions: ["Is it necessary to remove this mole?", "is it necessary to remove it?"], Answers: ["Pigmented nevus - intradermal nevus, often occurs in childhood, benign, surgery is recommended for removal.", "It's better to have it cut.", "Simple excision for pathology is sufficient.", "It's not a good thing, cut it off."]
+Output: ["yes", "yes", "yes", "yes"]
+
+OUTPUT FORMAT Return strictly a JSON list of strings corresponding 1:1 with the input Answers. Valid values are only "yes", "no", or ""."""
+
 SYSTEM_PROMPT_IAA_EXTRACTION = """You are a precise linguistic analysis engine specialized in medical context extraction. Your task is to identify and extract all 'sentences' that qualify as Medical Identification, Assessment, or Advice (IAA) from a response, distinguishing it from Prognosis.
 
 INPUT DATA
@@ -156,24 +203,24 @@ EXAMPLES
 Example 1
 Input: ["After the treatment of contact dermatitis and scabies, many patients show changes in dermatitis. On one hand, it is related to scabies itself, on the other hand, the treatment drugs mainly based on sulfur have a significant impact on the skin. Therefore, during and after the treatment, attention should be paid to avoid further damage and protect the skin. However, it is necessary to first confirm whether the scabies has been cured. If the scabies has been cured, the main focus should be on anti-allergy treatment.", "Pay attention to hygiene and frequently air out your underwear and bedding. Ventilate the room and keep the environment clean. \n\nMaintain a light diet and avoid spicy and greasy foods. Eat more vegetables and fruits rich in vitamin C, and drink more milk."]
 Output: [["After the treatment of contact dermatitis and scabies, many patients show changes in dermatitis.", "On one hand, it is related to scabies itself, on the other hand, the treatment drugs mainly based on sulfur have a significant impact on the skin.", "Therefore, during and after the treatment, attention should be paid to avoid further damage and protect the skin.", "However, it is necessary to first confirm whether the scabies has been cured.", "If the scabies has been cured, the main focus should be on anti-allergy treatment."], ["Pay attention to hygiene and frequently air out your underwear and bedding. Ventilate the room and keep the environment clean", "Maintain a light diet and avoid spicy and greasy foods. Eat more vegetables and fruits rich in vitamin C, and drink more milk."]]
-Reasoning:
+(Reasoning: 
 In the first response, the extraction is segmented into multiple distinct strings because the classification attributes change from sentence to sentence. Per the processing logic, consecutive IAA sentences must be separated if they require different label sets.
 Segment 1 & 2: While the first sentence ("After the treatment...") describes the Problem, the second sentence ("On one hand...") discusses both the Problem and the impact of drugs (Treatment). This addition of the 'Treatment' attribute necessitates a new span.
 Segment 3: "Therefore, during..." shifts focus strictly to preventative advice (Treatment), dropping the 'Problem' label.
 Segment 4: "However, it is necessary..." introduces a requirement for confirmation, introducing Followup attribute in addition to 'Problem' (the mention of scabies).
 Segment 5: "If the scabies..." returns to 'Problem' and 'Treatment'.
 Because the specific combination of labels (Problem, Test, Treatment, Followup) shifts at each sentence boundary, they are returned as individual strings rather than a single merged block.
-In the second response, the separation is caused by the double newline (\n\n). This formatting is non-clinical whitespace and does not qualify as Medical Identification, Assessment, or Advice (IAA). Because you should extract only valid IAA content and strictly excludes non-relevant text, the \n\n is not captured. This creates a gap in the extraction, resulting in two distinct, non-contiguous spans of advice.
+In the second response, the separation is caused by the double newline (\n\n). This formatting is non-clinical whitespace and does not qualify as Medical Identification, Assessment, or Advice (IAA). Because you should extract only valid IAA content and strictly excludes non-relevant text, the \n\n is not captured. This creates a gap in the extraction, resulting in two distinct, non-contiguous spans of advice.)
 
 Example 2
 Input: ["Recommend evaluation in ER for Xray to evaluate for fracture. The nail will take up to 6 months to grow back."]
 Output: [["Recommend evaluation in ER for Xray to evaluate for fracture.", "The nail will take up to 6 months to grow back."]]
-Reasoning: The first sentence qualifies as an IAA because it recommends evaluation (Test, Followup). While the second provides information on the expected recovery timeline for the nail (Prognosis), but also describes current condition (Problem).
+(Reasoning: The first sentence qualifies as an IAA because it recommends evaluation (Test, Followup). While the second provides information on the expected recovery timeline for the nail (Prognosis), but also describes current condition (Problem).)
 
 Example 3
 Input: ["First of all, you can't scratch it anymore. Apply some anti-inflammatory topical cream. Observe it for a few days.", "Eczema?", "It is estimated to be a disease related to capillary hemangioma. Continue to observe, and if it enlarges, surgical removal is recommended.", "Is it folliculitis?", "It is recommended to first use Band-Aid externally and pay attention to cleanliness! Observe for a few days and see. If there is no improvement, go to a regular hospital for a check-up.", "Considering it is a capillary hemangioma, laser treatment is recommended.", "Capillary hemangioma???", "Hemangioma...", "Considered to be a capillary hemangioma.", "The possibility of purulent granuloma is relatively high.", "The description is about capillary hemangioma. Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "Pyogenic granuloma, laser treatment.", "The possibility of a skin hemangioma is still relatively high, laser or liquid nitrogen therapy should be considered.", "Capillary hemangioma, apply Mupirocin externally, observe!", "Hemangioma, is it possible?", "Don't rush to pick at it yet.", "After scratching the papular urticaria, closely follow up and revisit after a week.", "Consider multiple angiomas.", "Consider doing a color Doppler ultrasound.", "Can't pick with hands anymore.", "Considering hemangioma, it's very common in the chest area. Use laser after infection control.", "I am considering diseases related to angioma. I suggest that there is currently no need for medication and we should observe first. It could also be pigmentation.", "Artificial dermatitis, it will get better on its own in a few days."]
 Output: [["First of all, you can't scratch it anymore. Apply some anti-inflammatory topical cream. Observe it for a few days."], ["Eczema?"], ["It is estimated to be a disease related to capillary hemangioma.", "Continue to observe, and if it enlarges, surgical removal is recommended."], ["Is it folliculitis?"], ["It is recommended to first use Band-Aid externally and pay attention to cleanliness! Observe for a few days and see.", "If there is no improvement, go to a regular hospital for a check-up"], ["Considering it is a capillary hemangioma, laser treatment is recommended"], ["Capillary hemangioma???"], ["Hemangioma..."], ["Considered to be a capillary hemangioma."], ["The possibility of purulent granuloma is relatively high."], ["Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "The description is about capillary hemangioma"], ["Pyogenic granuloma, laser treatment."], ["The possibility of a skin hemangioma is still relatively high, laser or liquid nitrogen therapy should be considered."], ["Capillary hemangioma, apply Mupirocin externally, observe!"], ["Hemangioma, is it possible?"], ["Don't rush to pick at it yet."], ["After scratching the papular urticaria, closely follow up and revisit after a week."], ["Consider multiple angiomas."], ["Consider doing a color Doppler ultrasound."], ["Can't pick with hands anymore."], ["Use laser after infection control.", "Considering hemangioma, it's very common in the chest area."], ["It could also be pigmentation.", "I suggest that there is currently no need for medication and we should observe first.", "I am considering diseases related to angioma."], ["Artificial dermatitis, it will get better on its own in a few days."]]
-Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "Artificial dermatitis, it will get better on its own in a few days." are both prognoses because they describe possible outcomes. However, since the former is part of a broader treatment recommendation and the latter includes a diagnosis, they also qualify as IAA and are therefore included in the output.
+(Reasoning: Sentences "Don't squeeze it anymore, it's prone to infection." and "Artificial dermatitis, it will get better on its own in a few days." are both prognoses because they describe possible outcomes. However, since the former is part of a broader treatment recommendation and the latter includes a diagnosis, they also qualify as IAA and are therefore included in the output.)
 
 OUTPUT FORMAT
 Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""
@@ -252,12 +299,12 @@ EXAMPLES
 Example 1
 Input: ["The description is about capillary hemangioma. Try using ionization to burn it, liquid nitrogen is also acceptable. Don't squeeze it anymore, it's prone to infection.", "After scratching the papular urticaria, closely follow up and revisit after a week.", "Artificial dermatitis, it will get better on its own in a few days."]
 Output: [["Don't squeeze it anymore, it's prone to infection."], [], ["Artificial dermatitis, it will get better on its own in a few days."]]
-Reasoning: “Don’t squeeze it anymore, it’s prone to infection.” and “Artificial dermatitis, it will get better on its own in a few days.” are both IAAs because the former is part of a broader treatment recommendation and the latter includes a diagnosis. However, since they also describe possible outcomes, they qualify as Prognosis and are therefore included in the output.
+(Reasoning: “Don’t squeeze it anymore, it’s prone to infection.” and “Artificial dermatitis, it will get better on its own in a few days.” are both IAAs because the former is part of a broader treatment recommendation and the latter includes a diagnosis. However, since they also describe possible outcomes, they qualify as Prognosis and are therefore included in the output.)
 
 Example 2
 Input: ["The nail will likely grow back but can take up to 6 months. It is a good sign that the nail bed is growing back. It is difficult to say if there will be a deformity but no further intervention is recommended at this time."]
 Output: [["The nail will likely grow back but can take up to 6 months.", "It is difficult to say if there will be a deformity but no further intervention is recommended at this time."]]
-Reasoning: The first and third sentences describe future outcomes regarding nail growth and potential deformity, thus qualifying as Prognosis. The second sentence does not predict future outcomes, so it is excluded.
+(Reasoning: The first and third sentences describe future outcomes regarding nail growth and potential deformity, thus qualifying as Prognosis. The second sentence does not predict future outcomes, so it is excluded.)
 
 OUTPUT FORMAT
 Return strictly a JSON list of lists of strings. Maintain a strict 1:1 mapping with the Response list from the Input."""

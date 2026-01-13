@@ -5,10 +5,10 @@ from ast import literal_eval
 from copy import deepcopy
 
 from src.extraction.extractor import Extractor
-from src.preprocess.data import Document, QuestionType, Polarity, Label, Attribute
+from src.preprocess.data import Document, QuestionType, Polarity, Label, Attribute, Value
 from src.prompts import SYSTEM_PROMPT_QUESTION_EXTRACTION, SYSTEM_PROMPT_QUESTION_CLASSIFICATION, \
     SYSTEM_PROMPT_ANSWER_EXTRACTION, SYSTEM_PROMPT_IAA_EXTRACTION, \
-    SYSTEM_PROMPT_PROGNOSIS_EXTRACTION, SYSTEM_PROMPT_IAA_CLASSIFICATION
+    SYSTEM_PROMPT_PROGNOSIS_EXTRACTION, SYSTEM_PROMPT_IAA_CLASSIFICATION, SYSTEM_PROMPT_ANSWER_CLASSIFICATION
 
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -252,6 +252,40 @@ class LlmExtractor(Extractor):
             for response, answer in zip(new_document.responses, answers):
                 if answer:
                     response.annotations['content'].append(answer)
+
+        return new_document
+
+    def classify_binary_answers(self, document: Document) -> Document:
+        """Classifies the binary answers in the given document using the LLM.
+
+        Args:
+            document: The Document containing binary answers to classify.
+        Returns:
+            A new Document with classified binary answer Annotations. All other attributes are copied from the input document except for annotations.
+        """
+        # Create a new document to return
+        new_document = deepcopy(document)
+
+        for qa_pair in new_document.qa_pairs.values():
+            # Just in case binary/non-binary questions are mixed
+            questions = [q.att.text for q in qa_pair.questions if q.att.polarity == Polarity.BINARY]
+            if not questions:
+                continue
+
+            # Remove 'value' attribute from all answers
+            for answer in qa_pair.answers:
+                answer.att.value = None
+
+            # Create input
+            input_ = f"Questions: {questions}, Answers: {[answer.att.text for answer in qa_pair.answers]}"
+
+            # Classify answers using LLM
+            llm_response: str = self._get_llm_response(input_, SYSTEM_PROMPT_ANSWER_CLASSIFICATION)
+            preds: list[str] = self._extract_list_from_llm_response(llm_response)
+
+            # Assign values to answers
+            for answer, pred in zip(qa_pair.answers, preds):
+                answer.att.value = Value(value) if (value := pred.strip().lower()) in Value else None
 
         return new_document
 
