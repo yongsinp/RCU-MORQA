@@ -28,25 +28,6 @@ class LlmExtractor(Extractor):
         self.max_output_tokens = max_output_tokens
 
     @staticmethod
-    def _find_spans(text: str, subtext: str) -> tuple[int, int]:
-        """Finds the start and end indices of subtext in text, case-insensitive.
-
-        Args:
-            text: The main text to search within.
-            subtext: The subtext to find.
-        Returns:
-            A tuple containing the start and end indices of the subtext in the text. If not found, returns (0, 0).
-        """
-        text = text.lower()
-        subtext = subtext.lower()
-
-        for i in range(len(text) - len(subtext) + 1):
-            if text[i:i + len(subtext)] == subtext:
-                return i, i + len(subtext)
-
-        return 0, 0
-
-    @staticmethod
     def _get_outermost_list(text: str) -> str:
         """Extracts the outermost list from a string representation of a list.
 
