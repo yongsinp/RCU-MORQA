@@ -45,7 +45,7 @@ class DeepSeekExtractor(LlmExtractor):
                 },
                 {
                     "role": "user",
-                    "content": f"Input: {query}\nOutput:"
+                    "content": f"Input: {query}\nOutput: "
                 },
             ],
             stream=False
