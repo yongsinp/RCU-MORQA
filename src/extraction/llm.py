@@ -328,7 +328,7 @@ class LlmExtractor(Extractor):
         def set_attribute(att: Attribute, pred: dict) -> None:
             labels = pred.get('labels', [])
             if not labels:
-                self.logger.error(f"No labels predicted for IAA: Document ID {document.post_id}, Ent ID: {iaa.ent_id}")
+                self.logger.error(f"No labels predicted for IAA. Document ID: {document.post_id}, Ent ID: {iaa.ent_id}")
 
             # Set attributes based on labels and predictions
             att.is_follup = 'followup' in labels
