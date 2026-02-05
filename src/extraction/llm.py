@@ -17,6 +17,8 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 class LlmExtractor(Extractor):
     """Abstract base class for LLM-based question extractors and classifiers."""
 
+    ESCAPED_QUOTE = "<<<ESCAPED_QUOTE>>>"
+
     def __init__(self, model_name: str, max_output_tokens: int = -1) -> None:
         """Initializes the LLM extractor.
 
@@ -87,8 +89,10 @@ class LlmExtractor(Extractor):
         """Parses the LLM response to extract a list."""
         try:
             json_str = self._get_outermost_list(llm_response)
-            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)
-            return literal_eval(json_str)  # json.loads(json_str) may cause issues with quotes
+            json_str = json_str.replace('\\"', self.ESCAPED_QUOTE)  # Replace escaped quotes with a placeholder to avoid issues during parsing
+            json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)  # Fix contractions
+            result = literal_eval(json_str)  # json.loads(json_str) may cause issues with quotes
+            return [item.replace(self.ESCAPED_QUOTE, '\\"') for item in result if isinstance(item, str)]  # Restore escaped quotes
         except Exception as e:
             self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
             return []
