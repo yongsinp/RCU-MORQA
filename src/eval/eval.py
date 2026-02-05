@@ -1,38 +1,34 @@
 from src.preprocess.data import Annotation, Attribute, Label
 
 
-def is_overlapping(ann1: Annotation, ann2: Annotation, exact_match: bool = False, match_attr: bool = False) -> bool:
-    """Checks if two annotations have any overlaps.
+def is_overlapping(ann1: Annotation, ann2: Annotation, match_rate: float = 0.0, match_attr: bool = False) -> bool:
+    """Checks if two annotations overlap by a minimum match rate.
 
     Args:
-        ann1:
-            The first annotation.
-        ann2:
-            The second annotation.
-        exact_match:
-            If True, checks for exact span match. Defaults to False.
-        match_attr:
-            If True, checks if attributes match. Defaults to False.
+        ann1: The first annotation.
+        ann2: The second annotation.
+        match_rate: Minimum overlap ratio (0.0-1.0). 0.0 means any overlap, 1.0 means exact match. Defaults to 0.0.
+        match_attr: If True, checks if attributes match. Defaults to False.
 
     Returns:
-        True if annotations overlap (or match exactly if exact_match is True),
-        False otherwise.
+        True if annotations overlap by at least match_rate, False otherwise.
     """
-    # We should not compare implicit questions with non-implicit ones
     if bool(ann1.att.is_implicit) != bool(ann2.att.is_implicit):
         return False
 
-    if exact_match:
-        # Check for exact span/attribute match
-        if (ann1.start, ann1.end) == (ann2.start, ann2.end):
-            return ann1.att == ann2.att if match_attr else True
+    overlap_start = max(ann1.start, ann2.start)
+    overlap_end = min(ann1.end, ann2.end)
+
+    if overlap_end <= overlap_start:
         return False
 
-    # Check for span overlap
-    if ann1.end <= ann2.start or ann2.end <= ann1.start:
+    overlap_len = overlap_end - overlap_start
+    max_len = max(ann1.end - ann1.start, ann2.end - ann2.start)
+    overlap_ratio = overlap_len / max_len
+
+    if overlap_ratio < match_rate:
         return False
 
-    # Check for attribute match
     return ann1.att == ann2.att if match_attr else True
 
 
