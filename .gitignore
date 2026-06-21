@@ -6,6 +6,7 @@
 /cache/*
 __pycache__/
 *.pyc
+.pixi/
 
 ### IntelliJ
 # IntelliJ project files

@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "__PROJECT_NAME__"
-version = "0.1.0"
-description = "__FILL_IN__"
+name = "morqa-rcu"
+version = "1.0.0"
+description = "Medical Open-Response Question Answering - Response Content Units"
 readme = "README.md"
 authors = [
     { name = "Yongsin Park", email = "yongsin.nlp@gmail.com" },
@@ -29,8 +29,8 @@ test = ["__FILL_IN__"]
 docs = ["__FILL_IN__"]
 
 [project.urls]
-Homepage = "https://github.com/yongsinp/__PROJECT_NAME__"
-Issues = "https://github.com/yongsinp/__PROJECT_NAME__/issues"
+Homepage = "https://github.com/yongsinp/morqa-rcu"
+Issues = "https://github.com/yongsinp/morqa-rcu/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
