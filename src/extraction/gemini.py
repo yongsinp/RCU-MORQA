@@ -5,6 +5,7 @@ from google.genai import types
 
 from src.extraction.llm import LlmExtractor
 from src.extraction.runner import run_llm_tasks
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 logging.getLogger('google_genai.models').setLevel(logging.WARNING)
 
@@ -66,8 +67,8 @@ class GeminiExtractor(LlmExtractor):
 if __name__ == '__main__':
     extractor = GeminiExtractor(model_name="gemini-2.5-pro", reasoning=True, max_output_tokens=5000)
 
-    data_path = "../../data/rcu-en"
-    out_path = "../../out"
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
     datasets = [
         "iiyi",
         "woundcare",

@@ -6,6 +6,7 @@ from spacy.tokens import Doc, Span
 from src.extraction.extractor import Extractor
 from src.extraction.runner import ExtractionTask, run_tasks
 from src.preprocess.data import Document, Annotation
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 
 class RuleBasedExtractor(Extractor):
@@ -160,8 +161,8 @@ class RuleBasedExtractor(Extractor):
 if __name__ == '__main__':
     extractor = RuleBasedExtractor()
 
-    data_path = "../../data/rcu-en"
-    out_path = "../../out"
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
     datasets = [
         "iiyi",
         "woundcare",

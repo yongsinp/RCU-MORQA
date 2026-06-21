@@ -7,6 +7,7 @@ from src.extraction.runner import ExtractionTask, run_tasks
 from src.extraction.sentence_boundary import SentenceSplitter
 from src.preprocess.data import Document, Label
 from src.similarity.biobert import BioBertSimilarity
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
 
@@ -133,8 +134,8 @@ class BioBertExtractor(Extractor):
 if __name__ == '__main__':
     extractor = BioBertExtractor(similarity_model_name="pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb")
 
-    data_path = "../../data/rcu-en"
-    out_path = "../../out"
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
     datasets = [
         "iiyi",
         "woundcare",

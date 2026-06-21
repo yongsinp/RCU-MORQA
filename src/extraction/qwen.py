@@ -6,6 +6,7 @@ from transformers import AutoTokenizer
 
 from src.extraction.llm import LlmExtractor
 from src.extraction.runner import run_llm_tasks
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH, QWEN_TOKENIZER_PATH
 
 logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 
@@ -50,15 +51,15 @@ class QwenExtractor(LlmExtractor):
 
     def get_max_tokens(self, data: list[str]) -> int:
         """Gets the maximum number of tokens in the data using the Qwen tokenizer."""
-        tokenizer = AutoTokenizer.from_pretrained("../../external/qwen_tokenizer")
+        tokenizer = AutoTokenizer.from_pretrained(str(QWEN_TOKENIZER_PATH))
         return max(len(tokenizer.encode(text)) for text in data)
 
 
 if __name__ == '__main__':
     extractor = QwenExtractor(model_name="qwen3-vl-plus", max_output_tokens=5000)
 
-    data_path = "../../data/rcu-en"
-    out_path = "../../out"
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
     datasets = [
         "iiyi",
         "woundcare",

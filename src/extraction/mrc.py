@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from typing import Optional, Union, Tuple, List
 
 import torch
@@ -12,11 +11,9 @@ from transformers.trainer_utils import get_last_checkpoint
 from src.extraction.extractor import Extractor
 from src.extraction.runner import ExtractionTask, run_tasks
 from src.preprocess.data import Document, Label, QuestionType
+from src.util.paths import DATA_RCU_EN_PATH, MODELS_PATH, OUT_PATH
 
-# Define base paths relative to this file
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-MODEL_DIR = BASE_DIR / "models"
-DATA_DIR = BASE_DIR / "data"
+MODEL_DIR = MODELS_PATH
 
 
 class MRCExtractor(Extractor):
@@ -181,7 +178,7 @@ class MRCExtractor(Extractor):
         trained_model_name = f"{self.model_name.replace('/', '_')}"
 
         args = TrainingArguments(
-            output_dir=f"../../models/{trained_model_name}",
+            output_dir=str(MODELS_PATH / trained_model_name),
             eval_strategy="epoch",
             save_strategy="epoch",
             learning_rate=3e-5,
@@ -208,7 +205,7 @@ class MRCExtractor(Extractor):
 
         trainer.train(resume_from_checkpoint=last_checkpoint)
 
-        trainer.save_model(f"../../models/{trained_model_name}_trained")
+        trainer.save_model(str(MODELS_PATH / f"{trained_model_name}_trained"))
 
     def _load_model_for_inference(self, model_path: str) -> None:
         self.logger.info(f"Loading model from: {model_path}")
@@ -406,7 +403,7 @@ class MRCExtractor(Extractor):
 
 
 if __name__ == '__main__':
-    path = "../../data/rcu-en"
+    path = str(DATA_RCU_EN_PATH)
     datasets = [
         "iiyi",
         "woundcare",
@@ -423,7 +420,7 @@ if __name__ == '__main__':
     run_tasks(
         extractor=extractor,
         data_path=path,
-        out_path="../../out",
+        out_path=str(OUT_PATH),
         datasets=datasets,
         splits=splits,
         tasks=(ExtractionTask("answer_extraction", "extract_answers", "Extracting Answers"),),
