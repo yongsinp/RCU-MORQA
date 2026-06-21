@@ -1,14 +1,11 @@
-import os
-from collections import Counter
-from typing import Callable, override
+from typing import override
 
 import spacy
 from spacy.tokens import Doc, Span
 
-from src.eval.eval import is_overlapping
 from src.extraction.extractor import Extractor
+from src.extraction.runner import ExtractionTask, run_tasks
 from src.preprocess.data import Document, Annotation
-from src.util.io import read_json
 
 
 class RuleBasedExtractor(Extractor):
@@ -160,3 +157,26 @@ class RuleBasedExtractor(Extractor):
         return new_document
 
 
+if __name__ == '__main__':
+    extractor = RuleBasedExtractor()
+
+    data_path = "../../data/rcu-en"
+    out_path = "../../out"
+    datasets = [
+        "iiyi",
+        "woundcare",
+    ]
+    splits = [
+        "train_gold",
+        "valid_gold",
+        "test_gold",
+    ]
+
+    run_tasks(
+        extractor=extractor,
+        data_path=data_path,
+        out_path=out_path,
+        datasets=datasets,
+        splits=splits,
+        tasks=(ExtractionTask("question_extraction", "extract_questions", "Extracting Questions"),),
+    )

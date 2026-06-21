@@ -1,4 +1,3 @@
-import dataclasses
 import logging
 import os
 from pathlib import Path
@@ -11,8 +10,8 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, TrainingA
 from transformers.trainer_utils import get_last_checkpoint
 
 from src.extraction.extractor import Extractor
+from src.extraction.runner import ExtractionTask, run_tasks
 from src.preprocess.data import Document, Label, QuestionType
-from src.util.io import read_json, write_json
 
 # Define base paths relative to this file
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -407,49 +406,26 @@ class MRCExtractor(Extractor):
 
 
 if __name__ == '__main__':
-
-    # Paths and files
     path = "../../data/rcu-en"
     datasets = [
         "iiyi",
         "woundcare",
     ]
     splits = [
-        "gold",
-        # "system",
+        "valid_gold",
+        "valid_systems",
+        "test_gold",
+        "test_systems",
     ]
 
     extractor = MRCExtractor(model_name="dmis-lab/biobert-v1.1")
 
-    # Train
-    train_documents = []
-    valid_documents = []
-
-    for dataset in datasets:
-        for split in splits:
-            train_file = os.path.join(path, f"{dataset}_train_{split}.json")
-            valid_file = os.path.join(path, f"{dataset}_valid_{split}.json")
-
-            train_documents.extend([Document.from_dict(doc) for doc in read_json(train_file)])
-            valid_documents.extend([Document.from_dict(doc) for doc in read_json(valid_file)])
-
-    extractor.train(train_documents, valid_documents)
-
-    # Eval
-    for dataset in datasets:
-        for split in splits:
-            file = f"{dataset}_valid_{split}.json"
-            logging.info(f"Testing on: {file}")
-
-            data = read_json(os.path.join(path, file))
-            documents = [Document.from_dict(doc) for doc in data]
-
-            output_path = os.path.join(f"../../out/answer_extraction/{extractor.model_name.replace('/', '_')}/", file)
-            if os.path.exists(output_path):
-                logging.info(f"Answer extraction results found at {output_path}, skipping extraction.")
-            else:
-                answer_extraction_results = [
-                    dataclasses.asdict(extractor.extract_answers(document), dict_factory=Document.prune)
-                    for document in tqdm(documents, desc="Extracting Answers")
-                ]
-                write_json(output_path, answer_extraction_results)
+    run_tasks(
+        extractor=extractor,
+        data_path=path,
+        out_path="../../out",
+        datasets=datasets,
+        splits=splits,
+        tasks=(ExtractionTask("answer_extraction", "extract_answers", "Extracting Answers"),),
+        model_name=extractor.model_name,
+    )

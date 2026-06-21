@@ -1,15 +1,10 @@
-import copy
-import dataclasses
 import logging
-import os
 
 from google import genai
 from google.genai import types
-from tqdm import tqdm
 
 from src.extraction.llm import LlmExtractor
-from src.preprocess.data import Document, QuestionType
-from src.util.io import read_json, write_json
+from src.extraction.runner import run_llm_tasks
 
 logging.getLogger('google_genai.models').setLevel(logging.WARNING)
 
@@ -66,3 +61,22 @@ class GeminiExtractor(LlmExtractor):
         """Gets the maximum token length in the data using Gemini tokenizer."""
         client = genai.Client()
         return max(client.models.count_tokens(model=self.model_name, contents=text).total_tokens for text in data)
+
+
+if __name__ == '__main__':
+    extractor = GeminiExtractor(model_name="gemini-2.5-pro", reasoning=True, max_output_tokens=5000)
+
+    data_path = "../../data/rcu-en"
+    out_path = "../../out"
+    datasets = [
+        "iiyi",
+        "woundcare",
+    ]
+    run_llm_tasks(
+        extractor=extractor,
+        data_path=data_path,
+        out_path=out_path,
+        datasets=datasets,
+        question_splits=["train_gold", "valid_gold", "test_gold"],
+        non_question_splits=["train_gold", "valid_gold", "valid_systems", "test_gold", "test_systems"],
+    )

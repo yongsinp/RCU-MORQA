@@ -92,7 +92,7 @@ class LlmExtractor(Extractor):
             json_str = json_str.replace('\\"', self.ESCAPED_QUOTE)  # Replace escaped quotes with a placeholder to avoid issues during parsing
             json_str = re.sub(r"(\w)'(s|re|ve|ll|d|m|t)\b", r"\1\'\2", json_str, flags=re.IGNORECASE)  # Fix contractions
             result = literal_eval(json_str)  # json.loads(json_str) may cause issues with quotes
-            return [item.replace(self.ESCAPED_QUOTE, '\\"') for item in result if isinstance(item, str)]  # Restore escaped quotes
+            return [item.replace(self.ESCAPED_QUOTE, '\\"') for item in result if isinstance(item, str)] or result # Restore escaped quotes
         except Exception as e:
             self.logger.error("JSON parsing error: {}\n{}".format(e, llm_response))
             return []

@@ -1,15 +1,11 @@
-import copy
-import dataclasses
 import logging
 import os
 
 from openai import OpenAI
-from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from src.extraction.llm import LlmExtractor
-from src.preprocess.data import Document, QuestionType
-from src.util.io import read_json, write_json
+from src.extraction.runner import run_llm_tasks
 
 logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 
@@ -56,3 +52,22 @@ class QwenExtractor(LlmExtractor):
         """Gets the maximum number of tokens in the data using the Qwen tokenizer."""
         tokenizer = AutoTokenizer.from_pretrained("../../external/qwen_tokenizer")
         return max(len(tokenizer.encode(text)) for text in data)
+
+
+if __name__ == '__main__':
+    extractor = QwenExtractor(model_name="qwen3-vl-plus", max_output_tokens=5000)
+
+    data_path = "../../data/rcu-en"
+    out_path = "../../out"
+    datasets = [
+        "iiyi",
+        "woundcare",
+    ]
+    run_llm_tasks(
+        extractor=extractor,
+        data_path=data_path,
+        out_path=out_path,
+        datasets=datasets,
+        question_splits=["train_gold", "valid_gold", "test_gold"],
+        non_question_splits=["train_gold", "valid_gold", "valid_systems", "test_gold", "test_systems"],
+    )
