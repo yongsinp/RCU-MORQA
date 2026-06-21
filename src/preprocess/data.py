@@ -1,16 +1,10 @@
 import dataclasses
 import logging
-import os
 from abc import abstractmethod, ABC
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from pprint import pprint
 from typing import Optional, ClassVar
-
-import spacy
-
-from src.util.io import read_json
 
 
 class MorqaAttr(str, Enum):
