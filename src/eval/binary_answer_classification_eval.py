@@ -62,30 +62,43 @@ if __name__ == '__main__':
         "woundcare",
     ]
     splits = [
-        "train_gold",
-        "valid_gold",
+        "test_gold",
+        "test_systems",
     ]
-    files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
 
     # Model names
     models = [dir_name for dir_name in os.listdir(pred_path) if os.path.isdir(os.path.join(pred_path, dir_name))]
 
     for model in models:
         print(f"Model: {model}")
-        for file in files:
-            print(f"\tFile: {file}")
+        for dataset in datasets:
+            print(f"\tDataset: {dataset}")
 
-            gold_file = os.path.join(gold_path, file)
-            pred_file = os.path.join(pred_path, model, file)
-            gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
-            pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
+            combined_gold_values = []
+            combined_pred_values = []
 
-            result = eval(gold_data, pred_data)
+            for split in splits:
+                file = f"{dataset}_{split}.json"
+                gold_file = os.path.join(gold_path, file)
+                pred_file = os.path.join(pred_path, model, file)
 
-            # Value metrics
-            print("=== Values ===")
+                if not os.path.exists(pred_file):
+                    print(f"\t\tWarning: {pred_file} does not exist, skipping.")
+                    continue
+
+                gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
+                pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
+
+                result = eval(gold_data, pred_data)
+                combined_gold_values.extend(result['gold_values'])
+                combined_pred_values.extend(result['pred_values'])
+
+            # Calculate combined metrics
+            print("\t\t=== Values (Combined) ===")
             p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_values'], result['pred_values'], average='weighted', zero_division=0
+                combined_gold_values, combined_pred_values, average='weighted', zero_division=0
             )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_values'], result['pred_values']))
+            print(f"\t\tPrecision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
+            print("\t\t" + classification_report(combined_gold_values, combined_pred_values).replace("\n", "\n\t\t"))
+            print()
+        print()

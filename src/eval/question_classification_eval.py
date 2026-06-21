@@ -77,8 +77,10 @@ if __name__ == '__main__':
         "woundcare",
     ]
     splits = [
-        "train_gold",
-        "valid_gold",
+        # "train_gold",
+        # "valid_gold",
+        "test_gold",
+        # "test_systems",
     ]
     files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
 
@@ -92,6 +94,11 @@ if __name__ == '__main__':
 
             gold_file = os.path.join(gold_path, file)
             pred_file = os.path.join(pred_path, model, file)
+
+            if not os.path.exists(pred_file):
+                print(f"\t\tWarning: {pred_file} does not exist, skipping.")
+                continue
+
             gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
             pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
 
