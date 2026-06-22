@@ -1,10 +1,17 @@
 # MORQA-RCU
 
-Medical Open-Response Question Answering.
+Response Content Units: Medical Open-Response Question Answering
 
 ## Environment (Pixi)
 
-This project now uses [Pixi](https://pixi.sh) for dependency and task management.
+This project uses [Pixi](https://pixi.sh) for dependency and task management.
+
+## Prerequisites
+
+Before running extraction/evaluation tasks, make sure both are set up:
+
+1. Dataset files under `data/rcu-en/` (see [Dataset](#dataset))
+2. API keys for LLM tasks (see [Environment variables](#environment-variables))
 
 ### Install dependencies
 
@@ -12,11 +19,18 @@ This project now uses [Pixi](https://pixi.sh) for dependency and task management
 pixi install
 ```
 
-### Run tests
+### Run extraction tasks
 
 ```bash
-pixi run test
-pixi run test-verbose
+pixi run extract-gpt
+pixi run extract-gemini
+pixi run extract-qwen
+pixi run extract-deepseek
+pixi run extract-azure-deepseek
+pixi run extract-rule
+pixi run mrc-train
+pixi run extract-mrc  # Requires a trained model
+pixi run extract-biobert  # Similarity-based extraction using BioBERT embeddings
 ```
 
 ### Run analysis/evaluation tasks
@@ -33,23 +47,20 @@ pixi run similarity-biobert
 pixi run similarity-tfidf
 ```
 
-### Run extraction tasks
+### Run tests
 
 ```bash
-pixi run extract-gpt
-pixi run extract-gemini
-pixi run extract-qwen
-pixi run extract-deepseek
-pixi run extract-azure-deepseek
-pixi run extract-rule
-pixi run extract-mrc
-pixi run mrc-train
-pixi run extract-biobert
+pixi run test
+pixi run test-verbose
 ```
 
 ## Dataset
 
 There is currently no automated dataset download script in this repository.
+
+Dataset source:
+
+- https://osf.io/kcv2n/files/osfstorage (under `rcu-annotations-gem2026` directory)
 
 Expected location:
 
