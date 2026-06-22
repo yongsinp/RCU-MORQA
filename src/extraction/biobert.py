@@ -1,15 +1,13 @@
-import dataclasses
 import logging
-import os
 
 from sentence_transformers import util
-from tqdm import tqdm
 
 from src.extraction.extractor import Extractor
+from src.extraction.runner import ExtractionTask, run_tasks
 from src.extraction.sentence_boundary import SentenceSplitter
 from src.preprocess.data import Document, Label
 from src.similarity.biobert import BioBertSimilarity
-from src.util.io import read_json, write_json
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
 
@@ -134,11 +132,10 @@ class BioBertExtractor(Extractor):
 
 
 if __name__ == '__main__':
-    # Initialize extractor
     extractor = BioBertExtractor(similarity_model_name="pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb")
 
-    # Paths and files
-    path = "../../data/rcu-en"
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
     datasets = [
         "iiyi",
         "woundcare",
@@ -147,27 +144,20 @@ if __name__ == '__main__':
         "train_gold",
         "valid_gold",
     ]
-    files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
 
-    for file in files:
-        logging.info(f"File: {file}")
-        data = read_json(os.path.join(path, file))
-        documents = [Document.from_dict(doc) for doc in data]
-
-        # ans_threshold, no_ans_threshold, not_ans_threshold = extractor.get_answer_similarity_threshold(documents)
-        # logging.info(f"Answer Similarity Thresholds: {ans_threshold}")
-        # logging.info(f"No Answer Similarity Thresholds: {no_ans_threshold}")
-        # logging.info(f"Not Answer Similarity Thresholds: {not_ans_threshold}")
-
-        # Extract answers
-        for threshold in range(25, 86, 5):
-            threshold /= 100
-            output_path = os.path.join(f"../../out/answer_extraction/BioBERT_{threshold}/", file)
-            if os.path.exists(output_path):
-                logging.info(f"Answer extraction results found at {output_path}, skipping extraction.")
-            else:
-                answer_extraction_results = [
-                    dataclasses.asdict(extractor.extract_answers(document, threshold), dict_factory=Document.prune)
-                    for document in tqdm(documents, desc=f"Extracting Answers {threshold}")
-                ]
-                write_json(output_path, answer_extraction_results)
+    for threshold_int in range(25, 86, 5):
+        threshold = threshold_int / 100
+        run_tasks(
+            extractor=extractor,
+            data_path=data_path,
+            out_path=out_path,
+            datasets=datasets,
+            splits=splits,
+            tasks=(ExtractionTask(
+                "answer_extraction",
+                "extract_answers",
+                f"Extracting Answers {threshold}",
+                kwargs={"threshold": threshold},
+            ),),
+            model_name=f"BioBERT_{threshold}",
+        )

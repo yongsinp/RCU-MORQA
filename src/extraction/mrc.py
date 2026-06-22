@@ -1,7 +1,5 @@
-import dataclasses
 import logging
 import os
-from pathlib import Path
 from typing import Optional, Union, Tuple, List
 
 import torch
@@ -11,13 +9,11 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, TrainingA
 from transformers.trainer_utils import get_last_checkpoint
 
 from src.extraction.extractor import Extractor
+from src.extraction.runner import ExtractionTask, run_tasks
 from src.preprocess.data import Document, Label, QuestionType
-from src.util.io import read_json, write_json
+from src.util.paths import DATA_RCU_EN_PATH, MODELS_PATH, OUT_PATH
 
-# Define base paths relative to this file
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-MODEL_DIR = BASE_DIR / "models"
-DATA_DIR = BASE_DIR / "data"
+MODEL_DIR = MODELS_PATH
 
 
 class MRCExtractor(Extractor):
@@ -182,7 +178,7 @@ class MRCExtractor(Extractor):
         trained_model_name = f"{self.model_name.replace('/', '_')}"
 
         args = TrainingArguments(
-            output_dir=f"../../models/{trained_model_name}",
+            output_dir=str(MODELS_PATH / trained_model_name),
             eval_strategy="epoch",
             save_strategy="epoch",
             learning_rate=3e-5,
@@ -209,7 +205,7 @@ class MRCExtractor(Extractor):
 
         trainer.train(resume_from_checkpoint=last_checkpoint)
 
-        trainer.save_model(f"../../models/{trained_model_name}_trained")
+        trainer.save_model(str(MODELS_PATH / f"{trained_model_name}_trained"))
 
     def _load_model_for_inference(self, model_path: str) -> None:
         self.logger.info(f"Loading model from: {model_path}")
@@ -407,49 +403,26 @@ class MRCExtractor(Extractor):
 
 
 if __name__ == '__main__':
-
-    # Paths and files
-    path = "../../data/rcu-en"
+    path = str(DATA_RCU_EN_PATH)
     datasets = [
         "iiyi",
         "woundcare",
     ]
     splits = [
-        "gold",
-        # "system",
+        "valid_gold",
+        "valid_systems",
+        "test_gold",
+        "test_systems",
     ]
 
     extractor = MRCExtractor(model_name="dmis-lab/biobert-v1.1")
 
-    # Train
-    train_documents = []
-    valid_documents = []
-
-    for dataset in datasets:
-        for split in splits:
-            train_file = os.path.join(path, f"{dataset}_train_{split}.json")
-            valid_file = os.path.join(path, f"{dataset}_valid_{split}.json")
-
-            train_documents.extend([Document.from_dict(doc) for doc in read_json(train_file)])
-            valid_documents.extend([Document.from_dict(doc) for doc in read_json(valid_file)])
-
-    extractor.train(train_documents, valid_documents)
-
-    # Eval
-    for dataset in datasets:
-        for split in splits:
-            file = f"{dataset}_valid_{split}.json"
-            logging.info(f"Testing on: {file}")
-
-            data = read_json(os.path.join(path, file))
-            documents = [Document.from_dict(doc) for doc in data]
-
-            output_path = os.path.join(f"../../out/answer_extraction/{extractor.model_name.replace('/', '_')}/", file)
-            if os.path.exists(output_path):
-                logging.info(f"Answer extraction results found at {output_path}, skipping extraction.")
-            else:
-                answer_extraction_results = [
-                    dataclasses.asdict(extractor.extract_answers(document), dict_factory=Document.prune)
-                    for document in tqdm(documents, desc="Extracting Answers")
-                ]
-                write_json(output_path, answer_extraction_results)
+    run_tasks(
+        extractor=extractor,
+        data_path=path,
+        out_path=str(OUT_PATH),
+        datasets=datasets,
+        splits=splits,
+        tasks=(ExtractionTask("answer_extraction", "extract_answers", "Extracting Answers"),),
+        model_name=extractor.model_name,
+    )

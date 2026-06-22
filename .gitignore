@@ -6,6 +6,10 @@
 /cache/*
 __pycache__/
 *.pyc
+.pixi/
+.env.*
+!.env.example
+.env
 
 ### IntelliJ
 # IntelliJ project files

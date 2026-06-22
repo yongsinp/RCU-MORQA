@@ -1,16 +1,12 @@
-import copy
-import dataclasses
 import logging
-import os
 from os import getenv
 
 import tiktoken
 from openai import AzureOpenAI
-from tqdm import tqdm
 
 from src.extraction.llm import LlmExtractor
-from src.preprocess.data import Document, QuestionType
-from src.util.io import read_json, write_json
+from src.extraction.runner import run_llm_tasks
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 
@@ -57,3 +53,22 @@ class GptExtractor(LlmExtractor):
         """Gets the maximum token length in the data using tiktoken."""
         encoding = tiktoken.encoding_for_model(self.model_name)
         return max(len(encoding.encode(text)) for text in data)
+
+
+if __name__ == '__main__':
+    extractor = GptExtractor(model_name="gpt-4o", max_output_tokens=5000)
+
+    data_path = str(DATA_RCU_EN_PATH)
+    out_path = str(OUT_PATH)
+    datasets = [
+        "iiyi",
+        "woundcare",
+    ]
+    run_llm_tasks(
+        extractor=extractor,
+        data_path=data_path,
+        out_path=out_path,
+        datasets=datasets,
+        question_splits=["train_gold", "valid_gold", "test_gold"],
+        non_question_splits=["train_gold", "valid_gold", "valid_systems", "test_gold", "test_systems"],
+    )

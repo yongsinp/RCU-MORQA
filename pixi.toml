@@ -1,0 +1,49 @@
+[workspace]
+name = "morqa-rcu"
+version = "1.0.0"
+description = "Medical Open-Response Question Answering - Response Content Units"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[tasks]
+test = "python -m pytest tests/"
+test-verbose = "python -m pytest tests/ -v"
+eval-iaa-classification = "python -m src.eval.cli iaa-classification"
+similarity-biobert = "python -m src.similarity.biobert"
+similarity-tfidf = "python -m src.similarity.tfidf"
+eval-question-extraction = "python -m src.eval.cli question-extraction"
+eval-question-classification = "python -m src.eval.cli question-classification"
+eval-answer-extraction = "python -m src.eval.cli answer-extraction"
+eval-binary-answer-classification = "python -m src.eval.cli binary-answer-classification"
+eval-iaa-extraction = "python -m src.eval.cli iaa-extraction"
+eval-prognosis-extraction = "python -m src.eval.cli prognosis-extraction"
+extract-gpt = "python -m src.extraction.cli gpt"
+extract-gemini = "python -m src.extraction.cli gemini"
+extract-qwen = "python -m src.extraction.cli qwen"
+extract-deepseek = "python -m src.extraction.cli deepseek"
+extract-azure-deepseek = "python -m src.extraction.cli azure-deepseek"
+extract-rule = "python -m src.extraction.cli rule"
+extract-mrc = "python -m src.extraction.cli mrc"
+mrc-train = "python -m src.extraction.cli mrc-train"
+extract-biobert = "python -m src.extraction.cli biobert"
+
+[dependencies]
+python = ">=3.10,<3.13"
+pip = "*"
+
+[pypi-dependencies]
+scikit-learn = "~=1.7.2"
+tiktoken = "~=0.12.0"
+openai = "~=2.9.0"
+google-genai = ">=1.0,<2"
+tqdm = "~=4.67.1"
+datasets = ">=2,<4"
+transformers = "~=4.57.3"
+accelerate = ">=0.26.0"
+spacy = "~=3.8.11"
+numpy = "~=2.3.5"
+sentence-transformers = "~=5.2.0"
+pytest = ">=8,<9"
+click = ">=8,<9"
+typer = ">=0.12,<1"
+python-dotenv = ">=1.0,<2"

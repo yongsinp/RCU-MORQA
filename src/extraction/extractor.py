@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from src.preprocess.data import Document, Annotation, Attribute, Label, IMPLICIT_QUESTTYP
+from src.preprocess.data import Document, Annotation, Attribute, Label, IMPLICIT_QUESTTYP, Polarity
 
 logging.basicConfig(
     level=logging.INFO,
@@ -110,6 +110,7 @@ class Extractor(ABC):
             ann = Extractor._create_annotation(first_word, start, end)
             ann.att.is_implicit = True
             ann.att.questtyp = questtyp
+            ann.att.polarity = Polarity.OPEN
             new_document.annotations[key].append(ann)
 
     @staticmethod

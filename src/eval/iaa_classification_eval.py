@@ -1,11 +1,9 @@
-import os
 from functools import singledispatch
 from typing import Any, Union
 
-from sklearn.metrics import precision_recall_fscore_support, classification_report
-
+from src.eval.runner import run_iaa_classification_eval
 from src.preprocess.data import Document, QuestionType
-from src.util.io import read_json
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 
 @singledispatch
@@ -117,8 +115,8 @@ def _(gold_data: list[Document], pred_data: list[Document]) -> dict[str, list[An
 
 if __name__ == '__main__':
     # Paths
-    gold_path = "../../data/rcu-en/"
-    pred_path = "../../out/iaa_classification/"
+    gold_path = str(DATA_RCU_EN_PATH)
+    pred_path = str(OUT_PATH / "iaa_classification")
 
     # File names
     datasets = [
@@ -126,70 +124,8 @@ if __name__ == '__main__':
         "woundcare",
     ]
     splits = [
-        "train_gold",
-        "valid_gold",
+        "test_gold",
+        "test_systems",
     ]
-    files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
 
-    # Model names
-    models = [dir_name for dir_name in os.listdir(pred_path) if os.path.isdir(os.path.join(pred_path, dir_name))]
-
-    for model in models:
-        print(f"Model: {model}")
-        for file in files:
-            print(f"\tFile: {file}")
-
-            gold_file = os.path.join(gold_path, file)
-            pred_file = os.path.join(pred_path, model, file)
-            gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
-            pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
-
-            result = eval(gold_data, pred_data)
-
-            # Problem metrics
-            print("=== Problem ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_problem'], result['pred_problem'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_problem'], result['pred_problem']))
-
-            # Test metrics
-            print("=== Test ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_test'], result['pred_test'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_test'], result['pred_test']))
-
-            # Treatment metrics
-            print("=== Treatment ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_treatment'], result['pred_treatment'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_treatment'], result['pred_treatment']))
-
-            # Follow-up metrics
-            print("=== Follow-up ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_follup'], result['pred_follup'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_follup'], result['pred_follup']))
-
-            # Severe metrics
-            print("=== Severe ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_severe'], result['pred_severe'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_severe'], result['pred_severe']))
-
-            # Conditional metrics
-            print("=== Conditional ===")
-            p, r, f1, _ = precision_recall_fscore_support(
-                result['gold_conditional'], result['pred_conditional'], average='weighted', zero_division=0
-            )
-            print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result['gold_conditional'], result['pred_conditional']))
+    run_iaa_classification_eval(eval, gold_path, pred_path, datasets, splits)

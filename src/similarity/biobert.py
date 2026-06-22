@@ -1,12 +1,9 @@
-import os
 from functools import singledispatchmethod
 from typing import Union
 
 import torch
 from sentence_transformers import SentenceTransformer, util
 
-from src.preprocess.analyze import read_json
-from src.preprocess.data import Document
 from src.similarity.similarity import Similarity
 
 

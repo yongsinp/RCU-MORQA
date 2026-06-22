@@ -1,16 +1,10 @@
 import dataclasses
 import logging
-import os
 from abc import abstractmethod, ABC
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from pprint import pprint
 from typing import Optional, ClassVar
-
-import spacy
-
-from src.util.io import read_json
 
 
 class MorqaAttr(str, Enum):
@@ -112,8 +106,7 @@ class Attribute(MorqaData):
 
     def __post_init__(self):
         if self.is_conditional and not self.is_follup:
-            # raise ValueError("is_conditional can only be True if is_follup is also True")
-            self.LOGGER.error("is_conditional can only be True if is_follup is also True")
+            raise ValueError("is_conditional can only be True if is_follup is also True")
 
         if self.is_implicit and self.questtyp not in self.IMPLICIT_QUESTTYP:
             raise ValueError(f"Invalid questtyp ({self.questtyp}) for implicit question")
@@ -173,14 +166,20 @@ class Annotation(MorqaData):
 
     @classmethod
     def from_dict(cls, data: dict) -> "Annotation":
-        return cls(
-            att=Attribute.from_dict(data["att"]),
-            doc=str(data.get('doc', "")),
-            end=int(data["end"]),
-            ent_id=str(data.get('ent_id', "")),
-            label=Label(data["label"]),
-            start=int(data["start"]),
-        )
+        try:
+            doc = str(data.get('doc', ""))
+            ent_id = str(data.get('ent_id', ""))
+            return cls(
+                att=Attribute.from_dict(data["att"]),
+                doc=doc,
+                end=int(data["end"]),
+                ent_id=ent_id,
+                label=Label(data["label"]),
+                start=int(data["start"]),
+            )
+        except ValueError as e:
+            cls.LOGGER.error(f"Error parsing Annotation from data ({doc} / {ent_id}): {e}")
+            raise
 
 
 @dataclass
@@ -214,7 +213,7 @@ class Response(MorqaData):
             annotations={k.rsplit("_", 1)[0]: [Annotation.from_dict(ann) for ann in v]
                          for k, v in data["annotations"].items()},
             author_id=str(data.get('author_id', "")),
-            content=str(data.get(f'content_{language}', "")),
+            content=str(data.get(f'content_{language}', "")) or str(data.get('content', "")),
             response_num=str(data.get('response_num', "")),
             language=language,
         )
@@ -347,8 +346,8 @@ class Document(MorqaData):
             annotations={"query_title" if "title" in k else "query_content": [Annotation.from_dict(item) for item in v]
                          for k, v in data['annotations'].items()},
             post_id=str(data.get('post_id', "")),
-            query_content=str(data.get(f'query_content_{language}', "")),
-            query_title=str(data.get(f'query_title_{language}', "")),
+            query_content=str(data.get(f'query_content_{language}', "")) or str(data.get('query_content', "")),
+            query_title=str(data.get(f'query_title_{language}', "")) or str(data.get('query_title', "")),
             responses=[Response.from_dict(resp) for resp in data['responses']],
             language=language,
         )
