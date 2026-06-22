@@ -28,7 +28,7 @@ pixi run run-qwen
 pixi run run-deepseek
 pixi run run-azure-deepseek
 pixi run run-rule
-pixi run mrc-train
+pixi run train-mrc
 pixi run run-mrc  # Requires a trained model
 pixi run run-biobert  # Similarity-based extraction using BioBERT embeddings
 ```

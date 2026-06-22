@@ -24,7 +24,7 @@ run-deepseek = "python -m src.extraction.cli deepseek"
 run-azure-deepseek = "python -m src.extraction.cli azure-deepseek"
 run-rule = "python -m src.extraction.cli rule"
 run-mrc = "python -m src.extraction.cli mrc"
-mrc-train = "python -m src.extraction.cli mrc-train"
+train-mrc = "python -m src.extraction.cli mrc-train"
 run-biobert = "python -m src.extraction.cli biobert"
 
 [dependencies]
