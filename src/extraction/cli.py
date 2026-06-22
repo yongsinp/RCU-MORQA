@@ -6,16 +6,17 @@ import typer
 from src.extraction.runner import ExtractionTask, run_llm_tasks, run_tasks
 from src.preprocess.data import Document
 from src.util.io import read_json
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 app = typer.Typer(help="Run MORQA extraction pipelines.")
 
 
 def _default_data_path() -> str:
-    return "../../data/rcu-en"
+    return str(DATA_RCU_EN_PATH)
 
 
 def _default_out_path() -> str:
-    return "../../out"
+    return str(OUT_PATH)
 
 
 def _default_datasets() -> list[str]:

@@ -3,6 +3,7 @@ from typing import Any, Union
 
 from src.eval.runner import run_question_classification_eval
 from src.preprocess.data import Document, QuestionType
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 
 @singledispatch
@@ -65,8 +66,8 @@ def _(gold_data: list[Document], pred_data: list[Document]) -> dict[str, list[An
 
 if __name__ == '__main__':
     # Paths
-    gold_path = "../../data/rcu-en/"
-    pred_path = "../../out/question_classification/"
+    gold_path = str(DATA_RCU_EN_PATH)
+    pred_path = str(OUT_PATH / "question_classification")
 
     # File names
     datasets = [

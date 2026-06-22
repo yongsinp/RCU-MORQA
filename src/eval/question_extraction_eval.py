@@ -5,6 +5,7 @@ from typing import Union
 from src.eval.eval import is_overlapping
 from src.eval.runner import run_extraction_eval_per_file
 from src.preprocess.data import Document
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 
 @singledispatch
@@ -56,8 +57,8 @@ def _(gold_data: list[Document], pred_data: list[Document],
 
 if __name__ == '__main__':
     # Paths
-    gold_path = "../../data/rcu-en/"
-    pred_path = "../../out/question_extraction/"
+    gold_path = str(DATA_RCU_EN_PATH)
+    pred_path = str(OUT_PATH / "question_extraction")
 
     # File names
     datasets = [

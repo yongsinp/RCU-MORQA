@@ -6,6 +6,7 @@ from typing import Union
 from src.eval.eval import is_overlapping
 from src.eval.runner import configure_logging, run_extraction_eval
 from src.preprocess.data import Document, Label, Annotation
+from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 
 @singledispatch
@@ -68,8 +69,8 @@ if __name__ == '__main__':
     configure_logging()
 
     # Paths
-    gold_path = "../../data/rcu-en/"
-    pred_path = "../../out/prognosis_extraction/"
+    gold_path = str(DATA_RCU_EN_PATH)
+    pred_path = str(OUT_PATH / "prognosis_extraction")
 
     # File names
     datasets = [
