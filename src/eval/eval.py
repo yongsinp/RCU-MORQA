@@ -1,4 +1,4 @@
-from src.preprocess.data import Annotation, Attribute, Label
+from src.preprocess.data import Annotation
 
 
 def is_overlapping(ann1: Annotation, ann2: Annotation, match_rate: float = 0.0, match_attr: bool = False) -> bool:
@@ -30,24 +30,3 @@ def is_overlapping(ann1: Annotation, ann2: Annotation, match_rate: float = 0.0, 
         return False
 
     return ann1.att == ann2.att if match_attr else True
-
-
-if __name__ == '__main__':
-    attr = Attribute(text="text")
-    attr2 = Attribute(text="text2")
-    ann1 = Annotation(att=attr, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=5, end=15)
-    ann2 = Annotation(att=attr, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=15, end=20)
-    ann3 = Annotation(att=attr, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=5, end=15)
-    ann4 = Annotation(att=attr, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=1, end=6)
-    ann5 = Annotation(att=attr, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=17, end=20)
-    ann6 = Annotation(att=attr2, doc="", ent_id=0, label=Label.SHORTEST_ANSWER, start=17, end=20)
-
-    print(is_overlapping(ann1, ann2))  # False
-    print(is_overlapping(ann1, ann4))  # True
-    print(is_overlapping(ann1, ann3, exact_match=True))  # True
-    print(is_overlapping(ann1, ann4, exact_match=True))  # False
-    print(is_overlapping(ann2, ann5))  # True
-    print(is_overlapping(ann4, ann5))  # False
-    print(is_overlapping(ann5, ann6, exact_match=True))  # True
-    print(is_overlapping(ann5, ann6, exact_match=True, match_attr=True))  # False
-    print(is_overlapping(ann5, ann6, match_attr=True))  # False
