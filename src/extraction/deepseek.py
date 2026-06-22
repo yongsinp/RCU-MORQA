@@ -6,7 +6,6 @@ from openai import OpenAI
 from transformers import AutoTokenizer
 
 from src.extraction.llm import LlmExtractor
-from src.util.paths import DEEPSEEK_TOKENIZER_PATH
 
 logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 
@@ -51,7 +50,7 @@ class DeepSeekExtractor(LlmExtractor):
 
     def get_max_tokens(self, data: list[str]) -> int:
         """Gets the maximum number of tokens in the data using the DeepSeek tokenizer."""
-        tokenizer = AutoTokenizer.from_pretrained(str(DEEPSEEK_TOKENIZER_PATH))
+        tokenizer = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-V3", trust_remote_code=True)
         return max(len(tokenizer.encode(text)) for text in data)
 
 
@@ -97,5 +96,5 @@ class AzureDeepSeekExtractor(LlmExtractor):
 
     def get_max_tokens(self, data: list[str]) -> int:
         """Gets the maximum number of tokens in the data using the DeepSeek tokenizer."""
-        tokenizer = AutoTokenizer.from_pretrained(str(DEEPSEEK_TOKENIZER_PATH))
+        tokenizer = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-V3", trust_remote_code=True)
         return max(len(tokenizer.encode(text)) for text in data)
