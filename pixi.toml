@@ -8,7 +8,6 @@ platforms = ["linux-64", "osx-64", "osx-arm64"]
 [tasks]
 test = "python -m pytest tests/"
 test-verbose = "python -m pytest tests/ -v"
-analyze = "python -m src.preprocess.analyze"
 eval-iaa-classification = "python -m src.eval.cli iaa-classification"
 similarity-biobert = "python -m src.similarity.biobert"
 similarity-tfidf = "python -m src.similarity.tfidf"

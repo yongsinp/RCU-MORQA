@@ -22,10 +22,13 @@ pixi run test-verbose
 ### Run analysis/evaluation tasks
 
 ```bash
-pixi run analyze
 pixi run eval-iaa-classification
+pixi run eval-question-classification
+pixi run eval-binary-answer-classification
 pixi run eval-question-extraction
 pixi run eval-answer-extraction
+pixi run eval-iaa-extraction
+pixi run eval-prognosis-extraction
 pixi run similarity-biobert
 pixi run similarity-tfidf
 ```
