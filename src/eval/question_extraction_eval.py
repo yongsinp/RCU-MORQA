@@ -1,11 +1,10 @@
-import os
 from collections import Counter
 from functools import singledispatch
 from typing import Union
 
 from src.eval.eval import is_overlapping
+from src.eval.runner import run_extraction_eval_per_file
 from src.preprocess.data import Document
-from src.util.io import read_json
 
 
 @singledispatch
@@ -72,34 +71,5 @@ if __name__ == '__main__':
         "test_gold",
         # "test_systems",
     ]
-    files = [f"{dataset}_{split}.json" for dataset in datasets for split in splits]
-
-    # Model names
-    models = [dir_name for dir_name in os.listdir(pred_path) if os.path.isdir(os.path.join(pred_path, dir_name))]
-
     match_rate: float = 0
-    for model in models:
-        print(f"Model: {model}")
-        for file in files:
-            print(f"\tFile: {file}")
-
-            gold_file = os.path.join(gold_path, file)
-            pred_file = os.path.join(pred_path, model, file)
-            if not os.path.exists(pred_file):
-                continue
-
-            gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
-            pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
-
-            metrics = eval(gold_data, pred_data, match_rate=match_rate)
-
-            precision = metrics['TP'] / (metrics['TP'] + metrics['FP']) if (metrics['TP'] + metrics['FP']) > 0 else 0.0
-            recall = metrics['TP'] / (metrics['TP'] + metrics['FN']) if (metrics['TP'] + metrics['FN']) > 0 else 0.0
-            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-
-            print("\t\t{} Match:".format("Exact" if match_rate else "Relaxed"))
-            print(f"\t\t\tPrecision: {precision:.4f}")
-            print(f"\t\t\tRecall: {recall:.4f}")
-            print(f"\t\t\tF1 Score: {f1:.4f}")
-            print()
-        print()
+    run_extraction_eval_per_file(eval, gold_path, pred_path, datasets, splits, match_rate=match_rate)

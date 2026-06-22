@@ -1,12 +1,11 @@
 import logging
-import os
 from collections import Counter
 from functools import singledispatch
 from typing import Union
 
 from src.eval.eval import is_overlapping
+from src.eval.runner import configure_logging, run_extraction_eval
 from src.preprocess.data import Document, Label, Annotation
-from src.util.io import read_json
 
 
 @singledispatch
@@ -66,13 +65,7 @@ def _(gold_data: list[Document], pred_data: list[Document],
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler()
-        ]
-    )
+    configure_logging()
 
     # Paths
     gold_path = "../../data/rcu-en/"
@@ -88,46 +81,5 @@ if __name__ == '__main__':
         "test_systems",
     ]
 
-    # Model names
-    models = [dir_name for dir_name in os.listdir(pred_path) if os.path.isdir(os.path.join(pred_path, dir_name))]
-
     match_rate: float = 0.0
-    for model in models:
-        print(f"Model: {model}")
-        for dataset in datasets:
-            print(f"\tDataset: {dataset}")
-
-            combined_metrics = Counter()
-
-            for split in splits:
-                file = f"{dataset}_{split}.json"
-                gold_file = os.path.join(gold_path, file)
-                pred_file = os.path.join(pred_path, model, file)
-
-                if not os.path.exists(pred_file):
-                    logging.warning(f"Prediction file {pred_file} does not exist, skipping.")
-                    continue
-
-                gold_data = [Document.from_dict(doc) for doc in read_json(gold_file)]
-                pred_data = [Document.from_dict(doc) for doc in read_json(pred_file)]
-
-                metrics = eval(gold_data, pred_data, match_rate=match_rate)
-                combined_metrics.update(metrics)
-
-            # Calculate combined metrics
-            precision = combined_metrics['TP'] / (combined_metrics['TP'] + combined_metrics['FP']) if (combined_metrics[
-                                                                                                           'TP'] +
-                                                                                                       combined_metrics[
-                                                                                                           'FP']) > 0 else 0.0
-            recall = combined_metrics['TP'] / (combined_metrics['TP'] + combined_metrics['FN']) if (combined_metrics[
-                                                                                                        'TP'] +
-                                                                                                    combined_metrics[
-                                                                                                        'FN']) > 0 else 0.0
-            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-
-            print("\t\t{} Match (Combined):".format("Exact" if match_rate else "Relaxed"))
-            print(f"\t\t\tPrecision: {precision:.4f}")
-            print(f"\t\t\tRecall: {recall:.4f}")
-            print(f"\t\t\tF1 Score: {f1:.4f}")
-            print()
-        print()
+    run_extraction_eval(eval, gold_path, pred_path, datasets, splits, match_rate=match_rate)
