@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morqa-rcu"
-version = "1.0.0"
+version = "1.0.1"
 description = "Response Content Units: Medical Open-Response Question Answering"
 readme = "README.md"
 authors = [
