@@ -44,12 +44,12 @@ pixi run python -m src.extraction.cli mrc-train --max-steps 5
 ### Run analysis/evaluation tasks
 
 ```bash
-pixi run eval-iaa-classification
+pixi run eval-medical-directives-classification
 pixi run eval-question-classification
 pixi run eval-binary-answer-classification
 pixi run eval-question-extraction
 pixi run eval-answer-extraction
-pixi run eval-iaa-extraction
+pixi run eval-medical-directives-extraction
 pixi run eval-prognosis-extraction
 pixi run similarity-biobert
 pixi run similarity-tfidf
@@ -59,7 +59,7 @@ pixi run similarity-tfidf
 
 ```bash
 pixi run python -m src.eval.cli --help
-pixi run python -m src.eval.cli iaa-classification
+pixi run python -m src.eval.cli medical-directives-classification
 pixi run python -m src.eval.cli run answer-extraction
 ```
 

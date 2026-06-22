@@ -18,14 +18,14 @@ class ExtractionTask:
     kwargs: dict[str, object] | None = None
 
 
-# todo: rename iaa to medical directive
 LLM_TASKS: tuple[ExtractionTask, ...] = (
     ExtractionTask("question_extraction", "extract_questions", "Extracting Questions"),
     ExtractionTask("question_classification", "classify_questions", "Classifying Questions"),
     ExtractionTask("answer_extraction", "extract_answers", "Extracting Answers"),
     ExtractionTask("answer_classification", "classify_binary_answers", "Classifying Answers"),
-    ExtractionTask("iaa_extraction", "extract_iaa", "Extracting IAA"),
-    ExtractionTask("iaa_classification", "classify_iaa", "Classifying IAA"),
+    # "iaa" in method names refers to "medical directives" (legacy internal naming)
+    ExtractionTask("medical_directives_extraction", "extract_iaa", "Extracting Medical Directives"),
+    ExtractionTask("medical_directives_classification", "classify_iaa", "Classifying Medical Directives"),
     ExtractionTask("prognosis_extraction", "extract_prognosis", "Extracting Prognosis"),
 )
 
