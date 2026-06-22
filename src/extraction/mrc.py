@@ -168,7 +168,13 @@ class MRCExtractor(Extractor):
 
         return Dataset.from_dict(dataset)
 
-    def train(self, train_documents, valid_documents, resume: bool = True) -> None:
+    def train(
+        self,
+        train_documents,
+        valid_documents,
+        resume: bool = True,
+        max_steps: int = -1,
+    ) -> None:
         # Create datasets
         train_dataset = self._create_dataset(train_documents)
         valid_dataset = self._create_dataset(valid_documents)
@@ -185,6 +191,7 @@ class MRCExtractor(Extractor):
             per_device_train_batch_size=16,
             per_device_eval_batch_size=16,
             num_train_epochs=5,
+            max_steps=max_steps,
             weight_decay=0.01,
             warmup_ratio=0.1,
             logging_steps=50,

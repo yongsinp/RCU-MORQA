@@ -158,6 +158,7 @@ def run_mrc(model_name: str = "dmis-lab/biobert-v1.1") -> None:
 def train_mrc(
     model_name: str = "dmis-lab/biobert-v1.1",
     include_system: bool = False,
+    max_steps: int = -1,
 ) -> None:
     from src.extraction.mrc import MRCExtractor
 
@@ -182,7 +183,7 @@ def train_mrc(
             valid_documents.extend(_load_documents(valid_file))
 
     extractor = MRCExtractor(model_name=model_name)
-    extractor.train(train_documents, valid_documents)
+    extractor.train(train_documents, valid_documents, max_steps=max_steps)
 
 
 @app.command("biobert")
