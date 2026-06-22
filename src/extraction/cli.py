@@ -5,10 +5,12 @@ import typer
 
 from src.extraction.runner import ExtractionTask, run_llm_tasks, run_tasks
 from src.preprocess.data import Document
+from src.util.env import load_env
 from src.util.io import read_json
 from src.util.paths import DATA_RCU_EN_PATH, OUT_PATH
 
 app = typer.Typer(help="Run MORQA extraction pipelines.")
+load_env()
 
 
 def _default_data_path() -> str:

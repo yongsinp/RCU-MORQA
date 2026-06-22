@@ -2,7 +2,10 @@ import runpy
 
 import typer
 
+from src.util.env import load_env
+
 app = typer.Typer(help="Run MORQA evaluation scripts.")
+load_env()
 
 
 def _run(module_name: str) -> None:
