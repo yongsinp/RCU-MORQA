@@ -135,14 +135,14 @@ def run_question_classification_eval(
                 result["gold_polarities"], result["pred_polarities"], average="weighted", zero_division=0
             )
             print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result["gold_polarities"], result["pred_polarities"]))
+            print(classification_report(result["gold_polarities"], result["pred_polarities"], zero_division=0))
 
             print("\n=== Question Type ===")
             p, r, f1, _ = precision_recall_fscore_support(
                 result["gold_types"], result["pred_types"], average="weighted", zero_division=0
             )
             print(f"Precision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print(classification_report(result["gold_types"], result["pred_types"]))
+            print(classification_report(result["gold_types"], result["pred_types"], zero_division=0))
 
 
 def run_binary_answer_classification_eval(
@@ -179,7 +179,12 @@ def run_binary_answer_classification_eval(
                 combined_gold_values, combined_pred_values, average="weighted", zero_division=0
             )
             print(f"\t\tPrecision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
-            print("\t\t" + classification_report(combined_gold_values, combined_pred_values).replace("\n", "\n\t\t"))
+            print(
+                "\t\t"
+                + classification_report(combined_gold_values, combined_pred_values, zero_division=0).replace(
+                    "\n", "\n\t\t"
+                )
+            )
             print()
         print()
 
@@ -232,9 +237,11 @@ def run_iaa_classification_eval(
                 print(f"\t\tPrecision: {p:.4f}, Recall: {r:.4f}, F1: {f1:.4f}")
                 print(
                     "\t\t"
-                    + classification_report(combined_result[f"gold_{key}"], combined_result[f"pred_{key}"]).replace(
-                        "\n", "\n\t\t"
-                    )
+                    + classification_report(
+                        combined_result[f"gold_{key}"],
+                        combined_result[f"pred_{key}"],
+                        zero_division=0,
+                    ).replace("\n", "\n\t\t")
                 )
             print()
         print()
