@@ -1,6 +1,6 @@
 [workspace]
 name = "morqa-rcu"
-version = "1.0.0"
+version = "1.0.1"
 description = "Response Content Units: Medical Open-Response Question Answering"
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64"]
@@ -8,24 +8,24 @@ platforms = ["linux-64", "osx-64", "osx-arm64"]
 [tasks]
 test = "python -m pytest tests/"
 test-verbose = "python -m pytest tests/ -v"
-eval-iaa-classification = "python -m src.eval.cli iaa-classification"
+eval-medical-directives-classification = "python -m src.eval.cli medical-directives-classification"
 similarity-biobert = "python -m src.similarity.biobert"
 similarity-tfidf = "python -m src.similarity.tfidf"
 eval-question-extraction = "python -m src.eval.cli question-extraction"
 eval-question-classification = "python -m src.eval.cli question-classification"
 eval-answer-extraction = "python -m src.eval.cli answer-extraction"
 eval-binary-answer-classification = "python -m src.eval.cli binary-answer-classification"
-eval-iaa-extraction = "python -m src.eval.cli iaa-extraction"
+eval-medical-directives-extraction = "python -m src.eval.cli medical-directives-extraction"
 eval-prognosis-extraction = "python -m src.eval.cli prognosis-extraction"
-extract-gpt = "python -m src.extraction.cli gpt"
-extract-gemini = "python -m src.extraction.cli gemini"
-extract-qwen = "python -m src.extraction.cli qwen"
-extract-deepseek = "python -m src.extraction.cli deepseek"
-extract-azure-deepseek = "python -m src.extraction.cli azure-deepseek"
-extract-rule = "python -m src.extraction.cli rule"
-extract-mrc = "python -m src.extraction.cli mrc"
-mrc-train = "python -m src.extraction.cli mrc-train"
-extract-biobert = "python -m src.extraction.cli biobert"
+run-gpt = "python -m src.extraction.cli gpt"
+run-gemini = "python -m src.extraction.cli gemini"
+run-qwen = "python -m src.extraction.cli qwen"
+run-deepseek = "python -m src.extraction.cli deepseek"
+run-azure-deepseek = "python -m src.extraction.cli azure-deepseek"
+run-rule = "python -m src.extraction.cli rule"
+run-mrc = "python -m src.extraction.cli mrc"
+train-mrc = "python -m src.extraction.cli mrc-train"
+run-biobert = "python -m src.extraction.cli biobert"
 
 [dependencies]
 python = ">=3.10,<3.13"

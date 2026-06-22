@@ -32,13 +32,13 @@ def binary_answer_classification() -> None:
     _run("src.eval.binary_answer_classification_eval")
 
 
-@app.command("iaa-extraction")
-def iaa_extraction() -> None:
+@app.command("medical-directives-extraction")
+def medical_directives_extraction() -> None:
     _run("src.eval.iaa_extraction_eval")
 
 
-@app.command("iaa-classification")
-def iaa_classification() -> None:
+@app.command("medical-directives-classification")
+def medical_directives_classification() -> None:
     _run("src.eval.iaa_classification_eval")
 
 
@@ -55,8 +55,8 @@ def run_eval(script: str) -> None:
         "question-classification": "src.eval.question_classification_eval",
         "answer-extraction": "src.eval.answer_extraction_eval",
         "binary-answer-classification": "src.eval.binary_answer_classification_eval",
-        "iaa-extraction": "src.eval.iaa_extraction_eval",
-        "iaa-classification": "src.eval.iaa_classification_eval",
+        "medical-directives-extraction": "src.eval.iaa_extraction_eval",
+        "medical-directives-classification": "src.eval.iaa_classification_eval",
         "prognosis-extraction": "src.eval.prognosis_extraction_eval",
     }
 
@@ -64,8 +64,8 @@ def run_eval(script: str) -> None:
     if module_name is None:
         raise typer.BadParameter(
             "Unknown eval script. Use one of: question-extraction, question-classification, "
-            "answer-extraction, binary-answer-classification, iaa-extraction, iaa-classification, "
-            "prognosis-extraction"
+            "answer-extraction, binary-answer-classification, medical-directives-extraction, "
+            "medical-directives-classification, prognosis-extraction"
         )
 
     _run(module_name)

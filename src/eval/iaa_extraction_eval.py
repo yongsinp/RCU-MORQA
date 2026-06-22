@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     # Paths
     gold_path = str(DATA_RCU_EN_PATH)
-    pred_path = str(OUT_PATH / "iaa_extraction")
+    pred_path = str(OUT_PATH / "medical_directives_extraction")
 
     # File names
     datasets = [

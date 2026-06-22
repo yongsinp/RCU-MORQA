@@ -22,15 +22,15 @@ pixi install
 ### Run extraction tasks
 
 ```bash
-pixi run extract-gpt
-pixi run extract-gemini
-pixi run extract-qwen
-pixi run extract-deepseek
-pixi run extract-azure-deepseek
-pixi run extract-rule
-pixi run mrc-train
-pixi run extract-mrc  # Requires a trained model
-pixi run extract-biobert  # Similarity-based extraction using BioBERT embeddings
+pixi run run-gpt
+pixi run run-gemini
+pixi run run-qwen
+pixi run run-deepseek
+pixi run run-azure-deepseek
+pixi run run-rule
+pixi run train-mrc
+pixi run run-mrc  # Requires a trained model
+pixi run run-biobert  # Similarity-based extraction using BioBERT embeddings
 ```
 
 ### Run extraction via CLI directly
@@ -44,12 +44,12 @@ pixi run python -m src.extraction.cli mrc-train --max-steps 5
 ### Run analysis/evaluation tasks
 
 ```bash
-pixi run eval-iaa-classification
+pixi run eval-medical-directives-classification
 pixi run eval-question-classification
 pixi run eval-binary-answer-classification
 pixi run eval-question-extraction
 pixi run eval-answer-extraction
-pixi run eval-iaa-extraction
+pixi run eval-medical-directives-extraction
 pixi run eval-prognosis-extraction
 pixi run similarity-biobert
 pixi run similarity-tfidf
@@ -59,7 +59,7 @@ pixi run similarity-tfidf
 
 ```bash
 pixi run python -m src.eval.cli --help
-pixi run python -m src.eval.cli iaa-classification
+pixi run python -m src.eval.cli medical-directives-classification
 pixi run python -m src.eval.cli run answer-extraction
 ```
 
