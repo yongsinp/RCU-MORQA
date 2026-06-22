@@ -1,7 +1,7 @@
 [workspace]
 name = "morqa-rcu"
 version = "1.0.0"
-description = "Medical Open-Response Question Answering - Response Content Units"
+description = "Response Content Units: Medical Open-Response Question Answering"
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64"]
 

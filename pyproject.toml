@@ -5,13 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "morqa-rcu"
 version = "1.0.0"
-description = "Medical Open-Response Question Answering - Response Content Units"
+description = "Response Content Units: Medical Open-Response Question Answering"
 readme = "README.md"
 authors = [
     { name = "Yongsin Park", email = "yongsin.nlp@gmail.com" },
 ]
 maintainers = [
-    { name = "__FILL_IN__", email = "__FILL_IN__" },
 ]
 license = { text = "MIT" }
 classifiers = [
@@ -22,11 +21,6 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
 ]
-
-[project.optional-dependencies]
-dev = ["__FILL_IN__"]
-test = ["__FILL_IN__"]
-docs = ["__FILL_IN__"]
 
 [project.urls]
 Homepage = "https://github.com/yongsinp/morqa-rcu"
