@@ -22,15 +22,15 @@ pixi install
 ### Run extraction tasks
 
 ```bash
-pixi run extract-gpt
-pixi run extract-gemini
-pixi run extract-qwen
-pixi run extract-deepseek
-pixi run extract-azure-deepseek
-pixi run extract-rule
+pixi run run-gpt
+pixi run run-gemini
+pixi run run-qwen
+pixi run run-deepseek
+pixi run run-azure-deepseek
+pixi run run-rule
 pixi run mrc-train
-pixi run extract-mrc  # Requires a trained model
-pixi run extract-biobert  # Similarity-based extraction using BioBERT embeddings
+pixi run run-mrc  # Requires a trained model
+pixi run run-biobert  # Similarity-based extraction using BioBERT embeddings
 ```
 
 ### Run extraction via CLI directly
