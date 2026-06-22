@@ -87,6 +87,40 @@ def run_qwen(model_name: str = "qwen3-vl-plus", max_output_tokens: int = 5000) -
     )
 
 
+@app.command("deepseek")
+def run_deepseek(model_name: str = "deepseek-chat", max_output_tokens: int = 5000) -> None:
+    from src.extraction.deepseek import DeepSeekExtractor
+
+    extractor = DeepSeekExtractor(model_name=model_name, max_output_tokens=max_output_tokens)
+    splits = _default_splits()
+    question_splits = [split for split in splits if "systems" not in split]
+    run_llm_tasks(
+        extractor,
+        _default_data_path(),
+        _default_out_path(),
+        _default_datasets(),
+        question_splits,
+        splits,
+    )
+
+
+@app.command("azure-deepseek")
+def run_azure_deepseek(model_name: str = "DeepSeek-V3", max_output_tokens: int = 5000) -> None:
+    from src.extraction.deepseek import AzureDeepSeekExtractor
+
+    extractor = AzureDeepSeekExtractor(model_name=model_name, max_output_tokens=max_output_tokens)
+    splits = _default_splits()
+    question_splits = [split for split in splits if "systems" not in split]
+    run_llm_tasks(
+        extractor,
+        _default_data_path(),
+        _default_out_path(),
+        _default_datasets(),
+        question_splits,
+        splits,
+    )
+
+
 @app.command("rule")
 def run_rule(model_name: str = "en_core_web_sm") -> None:
     from src.extraction.rule import RuleBasedExtractor
@@ -206,6 +240,12 @@ def run_extractor(
     if normalized == "qwen":
         run_qwen(model_name=model_name or "qwen3-vl-plus")
         return
+    if normalized == "deepseek":
+        run_deepseek(model_name=model_name or "deepseek-chat")
+        return
+    if normalized == "azure-deepseek":
+        run_azure_deepseek(model_name=model_name or "DeepSeek-V3")
+        return
     if normalized == "rule":
         run_rule(model_name=model_name or "en_core_web_sm")
         return
@@ -215,7 +255,7 @@ def run_extractor(
     if normalized == "biobert":
         run_biobert(model_name=model_name or "pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb")
         return
-    raise typer.BadParameter("Unknown extractor. Use one of: gpt, gemini, qwen, rule, mrc, biobert")
+    raise typer.BadParameter("Unknown extractor. Use one of: gpt, gemini, qwen, deepseek, azure-deepseek, rule, mrc, biobert")
 
 
 if __name__ == "__main__":
