@@ -33,6 +33,14 @@ pixi run extract-mrc  # Requires a trained model
 pixi run extract-biobert  # Similarity-based extraction using BioBERT embeddings
 ```
 
+### Run extraction via CLI directly
+
+```bash
+pixi run python -m src.extraction.cli --help
+pixi run python -m src.extraction.cli gpt --model-name gpt-4o
+pixi run python -m src.extraction.cli mrc-train --max-steps 5
+```
+
 ### Run analysis/evaluation tasks
 
 ```bash
@@ -45,6 +53,14 @@ pixi run eval-iaa-extraction
 pixi run eval-prognosis-extraction
 pixi run similarity-biobert
 pixi run similarity-tfidf
+```
+
+### Run evaluation via CLI directly
+
+```bash
+pixi run python -m src.eval.cli --help
+pixi run python -m src.eval.cli iaa-classification
+pixi run python -m src.eval.cli run answer-extraction
 ```
 
 ### Run tests
